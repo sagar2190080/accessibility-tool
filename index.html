@@ -7,21 +7,43 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
-body { font-family: Arial; margin:0; background:#f4f6f9;}
-header { background:#1f3c88; color:white; padding:15px; display:flex; justify-content:space-between; }
+body { font-family: Arial; margin:0; background:#f4f6f9; }
 
-.dashboard { display:flex; gap:10px; padding:10px; background:white; }
-.stat { flex:1; padding:10px; border-radius:6px; color:white; text-align:center; }
+header {
+  background:#1f3c88;
+  color:white;
+  padding:15px;
+  display:flex;
+  justify-content:space-between;
+}
+
+/* DASHBOARD */
+.dashboard {
+  display:flex;
+  gap:10px;
+  padding:10px;
+  background:white;
+}
+.stat {
+  flex:1;
+  padding:10px;
+  border-radius:6px;
+  color:white;
+  text-align:center;
+}
 .total { background:#007bff; }
 .high { background:#dc3545; }
 .medium { background:#ffc107; color:black; }
 .low { background:#28a745; }
 
+/* LAYOUT */
 .wrapper { display:flex; height:85vh; }
 .left { width:40%; background:white; padding:10px; overflow:auto; }
 .right { width:60%; padding:20px; }
 
+/* SEARCH */
 .search-container { position:relative; }
+
 #suggestions {
   position:absolute;
   width:100%;
@@ -30,12 +52,35 @@ header { background:#1f3c88; color:white; padding:15px; display:flex; justify-co
   max-height:200px;
   overflow:auto;
   display:none;
+  z-index:100;
 }
 
-.card { padding:10px; border-bottom:1px solid #eee; cursor:pointer; }
+.suggestion-item {
+  padding:8px;
+  cursor:pointer;
+}
+.suggestion-item:hover { background:#eef2ff; }
+
+/* LIST */
+.card {
+  padding:10px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+}
 .card:hover { background:#eef2ff; }
 
-.code-block { background:#f4f4f4; padding:10px; font-family:monospace; }
+/* CODE */
+.code-block {
+  background:#f4f4f4;
+  padding:10px;
+  font-family:monospace;
+}
+
+/* LOADER */
+.loader {
+  text-align:center;
+  font-size:18px;
+}
 
 </style>
 </head>
@@ -68,113 +113,71 @@ header { background:#1f3c88; color:white; padding:15px; display:flex; justify-co
 </div>
 
 <div class="right" id="previewPanel">
-<h3>Loading...</h3>
+<div class="loader">Loading data...</div>
 </div>
 
 </div>
 
 <script>
 
-let issues=[];
-let filtered=[];
+let issues = [];
+let filtered = [];
 
-/* ✅ SAFE TEXT */
-function safe(v){
-  return (v || "").toString();
-}
+/* ✅ SAFE */
+function safe(v){ return (v || "").toString(); }
 
-/* ✅ SAFE LOAD */
-window.onload=function(){
-
-  fetch("./repository.json")
-    .then(res => {
-      if (!res.ok) {
-        throw new Error("repository.json not found");
-      }
-      return res.json();
-    })
-    .then(data => {
-
-      if (!Array.isArray(data)) {
-        throw new Error("Invalid JSON format");
-      }
-
-      issues = data;
-      filtered = issues;
-
-      updateDashboard();
-      render();
-
-      if (filtered.length > 0) {
-        showPreview(filtered[0]);
-      }
-
-    })
-    .catch(err => {
-
-      console.error("LOAD ERROR:", err);
-
-      previewPanel.innerHTML = `
-        <h3 style="color:red;">Error loading data</h3>
-        <p>Fix required:</p>
-        <ul>
-          <li>repository.json must exist</li>
-          <li>Correct file name (lowercase)</li>
-          <li>Valid JSON format</li>
-          <li>File must be in root folder</li>
-        </ul>
-      `;
-    });
+/* ✅ LOAD DATA */
+window.onload = function(){
+  loadData();
 };
 
 function loadData(){
 
   fetch("./repository.json")
-  .then(res=>{
-    if(!res.ok){
-      throw new Error("File not found");
-    }
-    return res.json();
-  })
-  .then(data=>{
+    .then(r=>{
+      if(!r.ok) throw new Error("File not found");
+      return r.json();
+    })
+    .then(data=>{
 
-    issues = Array.isArray(data) ? data : [];
-    filtered = issues;
+      issues = Array.isArray(data) ? data : [];
+      filtered = issues;
 
-    updateDashboard();
-    render();
+      updateDashboard();
+      render();
 
-    if(filtered.length>0){
-      showPreview(filtered[0]);
-    } else {
-      previewPanel.innerHTML="<h3>No data available</h3>";
-    }
+      if(filtered.length > 0){
+        showPreview(filtered[0]);
+      } else {
+        previewPanel.innerHTML = "<h3>No data available</h3>";
+      }
 
-  })
-  .catch(err=>{
+    })
+    .catch(err=>{
+      console.error(err);
 
-    console.error("ERROR:", err);
-
-    previewPanel.innerHTML = `
-      <h3 style="color:red;">Error loading data</h3>
-      <p>Check repository.json</p>
-    `;
-  });
+      previewPanel.innerHTML = `
+        <div style="color:red;">
+          <h3>Error loading data</h3>
+          <button onclick="loadData()">Retry</button>
+        </div>
+      `;
+    });
 }
 
 /* ✅ DASHBOARD */
 function updateDashboard(){
 
-  totalBox.innerText="Total: "+issues.length;
-  highBox.innerText="High: "+issues.filter(i=>i.severity==="High").length;
-  mediumBox.innerText="Medium: "+issues.filter(i=>i.severity==="Medium").length;
-  lowBox.innerText="Low: "+issues.filter(i=>i.severity==="Low").length;
+  totalBox.innerText="Total: " + issues.length;
+  highBox.innerText="High: " + issues.filter(i=>i.severity==="High").length;
+  mediumBox.innerText="Medium: " + issues.filter(i=>i.severity==="Medium").length;
+  lowBox.innerText="Low: " + issues.filter(i=>i.severity==="Low").length;
 }
 
 /* ✅ SEARCH */
-document.getElementById("searchBox").addEventListener("input",function(){
+searchBox.addEventListener("input", function(){
 
-  let q=this.value.toLowerCase();
+  let q = this.value.toLowerCase();
 
   filtered = issues.filter(i =>
     safe(i.issue).toLowerCase().includes(q) ||
@@ -183,29 +186,61 @@ document.getElementById("searchBox").addEventListener("input",function(){
   );
 
   render();
+  showSuggestions(q);
 
-  if(filtered.length>0){
+  if(filtered.length > 0){
     showPreview(filtered[0]);
   } else {
     previewPanel.innerHTML="<h3>No results</h3>";
   }
 });
 
+/* ✅ SUGGESTIONS */
+function showSuggestions(q){
+
+  let box = document.getElementById("suggestions");
+
+  if(!q){
+    box.style.display="none";
+    return;
+  }
+
+  let matches = issues.filter(i =>
+    safe(i.issue).toLowerCase().includes(q)
+  );
+
+  box.innerHTML="";
+
+  matches.forEach(i=>{
+    let div=document.createElement("div");
+    div.className="suggestion-item";
+    div.innerText=i.issue;
+
+    div.onclick=function(){
+      searchBox.value=i.issue;
+      box.style.display="none";
+      filtered=[i];
+      render();
+      showPreview(i);
+    };
+
+    box.appendChild(div);
+  });
+
+  box.style.display = matches.length ? "block" : "none";
+}
+
 /* ✅ LIST */
 function render(){
 
-  let list=document.getElementById("resultList");
+  let list = document.getElementById("resultList");
   list.innerHTML="";
 
   filtered.forEach(i=>{
-
     let div=document.createElement("div");
     div.className="card";
-
     div.innerHTML="<b>"+safe(i.issue)+"</b>";
-
     div.onclick=()=>showPreview(i);
-
     list.appendChild(div);
   });
 }
@@ -216,11 +251,10 @@ function showPreview(i){
   let parts = safe(i.description).split("Code Snippet:");
 
   previewPanel.innerHTML=`
-    <h3>${safe(i.issue)}</h3>
-
-    <p><b>Type:</b> ${safe(i.type)}</p>
-    <p><b>Severity:</b> ${safe(i.severity)}</p>
-    <p><b>WCAG:</b> ${safe(i.wcagLevel)} | ${safe(i.wcagSC)}</p>
+    <h3>${i.issue}</h3>
+    <p><b>Type:</b> ${i.type}</p>
+    <p><b>Severity:</b> ${i.severity}</p>
+    <p><b>WCAG:</b> ${i.wcagLevel} | ${i.wcagSC}</p>
 
     <p><b>Description:</b></p>
     <p>${parts[0]}</p>
@@ -235,9 +269,7 @@ function showPreview(i){
 
 /* ✅ SAFE HTML */
 function escapeHTML(t){
-  return safe(t)
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;");
+  return safe(t).replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
 /* ✅ EXPORT */
@@ -245,15 +277,13 @@ function generateReport(){
 
   let rows=[["Issue","Severity"]];
 
-  issues.forEach(i=>{
-    rows.push([i.issue,i.severity]);
-  });
+  issues.forEach(i=>rows.push([i.issue,i.severity]));
 
   let ws=XLSX.utils.aoa_to_sheet(rows);
   let wb=XLSX.utils.book_new();
-
   XLSX.utils.book_append_sheet(wb,ws,"Report");
-  XLSX.writeFile(wb,"Report.xlsx");
+
+  XLSX.writeFile(wb,"Accessibility_Report.xlsx");
 }
 
 </script>
