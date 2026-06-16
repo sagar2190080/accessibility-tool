@@ -99,18 +99,8 @@ function findField(obj, keywords){
 
 /* ✅ MAP DATA CORRECTLY */
 function mapData(obj){
-
-  return {
-    issue: findField(obj, ["issue"]),
-    type: findField(obj, ["type"]),
-    description: findField(obj, ["description"]),
-    suggestion: findField(obj, ["suggestion","recommend"]),
-    severity: findField(obj, ["severity"]),
-    wcagLevel: findField(obj, ["level","wcag"]),
-    wcagSC: findField(obj, ["sc","criteria"])
-  };
+  return obj; // ✅ DATA IS ALREADY CLEAN
 }
-
 /* ✅ LOAD */
 window.onload=function(){
 
