@@ -2,39 +2,33 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Accessibility Tool</title>
-
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<title>Accessibility Issue Tool</title>
 
 <style>
-body { font-family: Arial; margin:0; background:#f4f6f9;}
+body { font-family: Arial; margin:0; background:#f4f6f9; }
+
 header {
   background:#1f3c88;
   color:white;
   padding:15px;
-  display:flex;
-  justify-content:space-between;
 }
-.dashboard {
-  display:flex;
-  gap:10px;
-  padding:10px;
-}
-.stat {
-  flex:1;
-  padding:10px;
-  color:white;
-  text-align:center;
-  border-radius:5px;
-}
-.total { background:#007bff; }
-.high { background:#dc3545; }
-.medium { background:#ffc107; color:black; }
-.low { background:#28a745; }
 
-.wrapper { display:flex; height:85vh; }
-.left { width:40%; overflow:auto; padding:10px; background:#fff; }
-.right { width:60%; padding:20px; }
+.wrapper {
+  display:flex;
+  height:90vh;
+}
+
+.left {
+  width:40%;
+  background:white;
+  padding:10px;
+  overflow:auto;
+}
+
+.right {
+  width:60%;
+  padding:20px;
+}
 
 .card {
   padding:10px;
@@ -43,32 +37,34 @@ header {
 }
 .card:hover { background:#eef; }
 
-.code { background:#eee; padding:10px; }
-
+input {
+  width:100%;
+  padding:8px;
+  margin-bottom:10px;
+}
 </style>
+
 </head>
 
 <body>
 
 <header>
-  <div>Accessibility Tool 🚀</div>
+  <h2>Accessibility Issue Tool</h2>
 </header>
-
-<div class="dashboard">
-  <div id="totalBox" class="stat total"></div>
-  <div id="highBox" class="stat high"></div>
-  <div id="mediumBox" class="stat medium"></div>
-  <div id="lowBox" class="stat low"></div>
-</div>
 
 <div class="wrapper">
 
 <div class="left">
-<input id="searchBox" placeholder="Search..." style="width:100%;margin-bottom:10px;">
+
+<input id="searchBox" placeholder="Search issues...">
+
 <div id="resultList"></div>
+
 </div>
 
-<div class="right" id="previewPanel"></div>
+<div class="right" id="previewPanel">
+<h3>Select an issue</h3>
+</div>
 
 </div>
 
@@ -77,113 +73,78 @@ header {
 let issues = [];
 let filtered = [];
 
-/* ✅ SMART FIELD FINDER (REAL FIX) */
-function findField(obj, keywords){
-
-  let keys = Object.keys(obj);
-
-  for(let key of keys){
-
-    let lower = key.toLowerCase();
-
-    for(let k of keywords){
-      if(lower.includes(k)){
-        return obj[key];
-      }
-    }
-
-  }
-
-  return "";
-}
-
-/* ✅ MAP DATA CORRECTLY */
-function mapData(obj){
-  return obj; // ✅ DATA IS ALREADY CLEAN
-}
-/* ✅ LOAD */
-window.onload=function(){
+/* ✅ LOAD DATA (NO MAPPING NEEDED) */
+window.onload = function(){
 
   fetch("./repository.json")
   .then(r=>r.json())
   .then(data=>{
 
-    issues = data.map(mapData);  // ✅ CORE FIX HERE
+    issues = data.filter(i => i["Issue"]); // ✅ ignore empty rows
     filtered = issues;
 
-    updateDashboard();
     render();
 
     if(filtered.length){
       showPreview(filtered[0]);
     }
-
   });
 };
 
-/* DASHBOARD */
-function updateDashboard(){
+/* ✅ SEARCH */
+searchBox.addEventListener("input", function(){
 
-  totalBox.innerText="Total: "+issues.length;
-  highBox.innerText="High: "+issues.filter(i=>i.severity==="High").length;
-  mediumBox.innerText="Medium: "+issues.filter(i=>i.severity==="Medium").length;
-  lowBox.innerText="Low: "+issues.filter(i=>i.severity==="Low").length;
-}
+  let q = this.value.toLowerCase();
 
-/* SEARCH */
-searchBox.addEventListener("input",function(){
-
-  let q=this.value.toLowerCase();
-
-  filtered = issues.filter(i =>
-
-    (i.issue+" "+i.description+" "+i.suggestion)
+  filtered = issues.filter(i => 
+    (i["Issue"] + " " + i["Issue Description"] + " " + i["Suggestion"])
     .toLowerCase()
     .includes(q)
-
   );
 
   render();
 
-  if(filtered.length){
-    showPreview(filtered[0]);
-  } else {
-    previewPanel.innerHTML="<h3>No results</h3>";
-  }
 });
 
-/* LIST */
+/* ✅ LIST RENDER */
 function render(){
 
-  resultList.innerHTML="";
+  resultList.innerHTML = "";
 
-  filtered.forEach(i=>{
+  filtered.forEach(i => {
 
-    let div=document.createElement("div");
-    div.className="card";
-    div.innerHTML="<b>"+(i.issue || "No title")+"</b>";
+    let div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = "<b>" + i["Issue"] + "</b>";
 
-    div.onclick=()=>showPreview(i);
+    div.onclick = () => showPreview(i);
 
     resultList.appendChild(div);
+
   });
+
 }
 
-/* PREVIEW */
+/* ✅ PREVIEW PANEL */
 function showPreview(i){
 
-  previewPanel.innerHTML=`
-    <h2>${i.issue}</h2>
+  previewPanel.innerHTML = `
+    <h2>${i["Issue"]}</h2>
 
-    <p><b>Type:</b> ${i.type}</p>
-    <p><b>Severity:</b> ${i.severity}</p>
-    <p><b>WCAG:</b> ${i.wcagLevel} | ${i.wcagSC}</p>
+    <p><b>Type:</b> ${i["Type of Issue"] || "-"}</p>
 
-    <p><b>Description:</b></p>
-    <p>${i.description}</p>
+    <p><b>Severity:</b> ${i["Severity"] || "-"}</p>
 
-    <p><b>Suggestion:</b></p>
-    <p>${i.suggestion}</p>
+    <p><b>WCAG:</b> ${i["WCAG 2.0 Conformance Level"] || "-"} 
+       | ${i["WCAG 2.0"] || "-"}</p>
+
+    <hr>
+
+    <h3>Description</h3>
+    <p>${(i["Issue Description"] || "") + " " + (i["Rationale"] || "")}</p>
+
+    <h3>Suggestion</h3>
+    <p>${i["Suggestion"] || "-"}</p>
   `;
 }
 
