@@ -1,19 +1,37 @@
 [
   {
+    "type": "Keyboard",
+    "issue": "Keyboard navigation issue",
+    "description": "User cannot navigate using keyboard",
+    "suggestion": "Add keyboard support",
+    "severity": "High",
+    "wcagLevel": "A",
+    "wcagSC": "2.1.1"
+  },
+  {
+    "type": "Keyboard",
+    "issue": "Keyboard trap issue",
+    "description": "Focus gets stuck",
+    "suggestion": "Fix focus management",
+    "severity": "High",
+    "wcagLevel": "A",
+    "wcagSC": "2.1.2"
+  },
+  {
     "type": "ARIA",
-    "issue": "ARIA Role and state defined inappropriately",
-    "description": "Using incorrect ARIA roles.\nCode Snippet:\n<div role='button'></div>",
-    "suggestion": "Use correct semantic HTML or proper ARIA roles",
+    "issue": "ARIA Role issue",
+    "description": "Wrong ARIA role",
+    "suggestion": "Use valid roles",
     "severity": "High",
     "wcagLevel": "A",
     "wcagSC": "4.1.2"
   },
   {
     "type": "Color",
-    "issue": "Insufficient color contrast",
-    "description": "Contrast between text and background is too low",
-    "suggestion": "Ensure minimum 4.5:1 contrast ratio",
-    "severity": "High",
+    "issue": "Color contrast issue",
+    "description": "Low contrast",
+    "suggestion": "Increase contrast",
+    "severity": "Medium",
     "wcagLevel": "AA",
     "wcagSC": "1.4.3"
   }
