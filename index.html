@@ -2,10 +2,13 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Accessibility Issue Tool</title>
+<title>Accessibility Tool</title>
 
 <style>
-body { font-family: Arial; margin:0; }
+body {
+  font-family: Arial;
+  margin:0;
+}
 
 header {
   background:#1f3c88;
@@ -13,46 +16,83 @@ header {
   padding:15px;
 }
 
-.wrapper { display:flex; height:90vh; }
+/* LAYOUT */
+.wrapper {
+  display:flex;
+  height:90vh;
+}
 
 .left {
   width:40%;
   background:#f5f5f5;
   padding:10px;
   overflow:auto;
+  position:relative;
 }
 
 .right {
   width:60%;
   padding:20px;
+  overflow:auto;   /* ✅ FIX OVERLAP */
 }
 
+/* LIST */
 .card {
   padding:10px;
   border-bottom:1px solid #ccc;
   cursor:pointer;
 }
-.card:hover { background:#e6f0ff; }
+.card:hover {
+  background:#e6f0ff;
+}
 
+/* SEARCH */
 input {
   width:100%;
   padding:8px;
-  margin-bottom:10px;
+  margin-bottom:5px;
 }
+
+/* ✅ AUTOSUGGEST BOX */
+#suggestions {
+  position:absolute;
+  background:white;
+  width:95%;
+  border:1px solid #ccc;
+  max-height:200px;
+  overflow:auto;
+  display:none;
+  z-index:1000;
+}
+
+.suggestion-item {
+  padding:8px;
+  cursor:pointer;
+}
+.suggestion-item:hover {
+  background:#eef;
+}
+
+/* TEXT */
+h2,h3 { margin-top:10px; }
 </style>
 </head>
 
 <body>
 
 <header>
-<h2>Accessibility Issue Tool</h2>
+<h2>Accessibility Tool</h2>
 </header>
 
 <div class="wrapper">
 
 <div class="left">
+
 <input id="searchBox" placeholder="Search...">
+<div id="suggestions"></div>
+
 <div id="resultList"></div>
+
 </div>
 
 <div class="right" id="previewPanel">
@@ -66,97 +106,135 @@ input {
 let issues = [];
 let filtered = [];
 
-/* ✅ CRITICAL FIX: Smart key resolver */
-function get(obj, keyword){
-  let key = Object.keys(obj).find(k => 
-    k.trim().toLowerCase().includes(keyword.toLowerCase())
-  );
-  return key ? obj[key] : "";
-}
-
-/* ✅ LOAD */
+/* ✅ LOAD DATA */
 window.onload = function(){
 
-  fetch("./repository.json")
-  .then(res => res.json())
-  .then(data => {
+  let saved = localStorage.getItem("repoData");
 
-    issues = data.map(row => ({
-      issue: get(row,"issue"),
-      type: get(row,"type"),
-      description: get(row,"description"),
-      rationale: get(row,"rationale"),
-      suggestion: get(row,"suggestion"),
-      severity: get(row,"severity"),
-      wcagLevel: get(row,"level"),
-      wcagSC: get(row,"wcag")
-    }))
-    .filter(x => x.issue && x.issue.length > 5);
+  if(!saved){
+    previewPanel.innerHTML = "<h3>Please import Excel first</h3>";
+    return;
+  }
 
-    filtered = issues;
+  issues = JSON.parse(saved);
+  filtered = issues;
 
-    render();
-
-    if(filtered.length){
-      show(filtered[0]);
-    }
-
-  });
-
+  renderList();
+  if(filtered.length){
+    showDetails(filtered[0]);
+  }
 };
 
-/* ✅ SEARCH */
+/* ✅ SMART VALUE GETTER (FIX WCAG ISSUE) */
+function getVal(obj, key1, key2){
+  return obj[key1] || obj[key2] || "-";
+}
+
+/* ✅ SEARCH + SUGGESTIONS */
 searchBox.addEventListener("input", function(){
 
-  let q = this.value.toLowerCase();
+  let q = this.value.toLowerCase().trim();
 
+  /* FILTER */
   filtered = issues.filter(i =>
-    (i.issue + " " + i.description + " " + i.suggestion)
-    .toLowerCase()
-    .includes(q)
+    JSON.stringify(i).toLowerCase().includes(q)
   );
 
-  render();
+  renderList();
+
+  /* ✅ SUGGESTIONS FIXED */
+  showSuggestions(q);
 
 });
 
+/* ✅ SUGGESTION FUNCTION */
+function showSuggestions(q){
+
+  let box = document.getElementById("suggestions");
+
+  if(!q){
+    box.style.display="none";
+    return;
+  }
+
+  let matches = issues
+    .filter(i =>
+      (i["Issue"] || i.issue || "").toLowerCase().includes(q)
+    )
+    .slice(0,5);  // top 5
+
+  box.innerHTML = "";
+
+  matches.forEach(i => {
+
+    let div = document.createElement("div");
+    div.className="suggestion-item";
+    div.innerText = i["Issue"] || i.issue;
+
+    div.onclick = function(){
+      searchBox.value = div.innerText;
+      box.style.display="none";
+
+      filtered = [i];
+      renderList();
+      showDetails(i);
+    };
+
+    box.appendChild(div);
+  });
+
+  box.style.display = matches.length ? "block" : "none";
+}
+
 /* ✅ LIST */
-function render(){
+function renderList(){
 
   resultList.innerHTML="";
 
-  filtered.forEach(i=>{
+  filtered.forEach(i => {
 
-    let div=document.createElement("div");
+    let div = document.createElement("div");
     div.className="card";
 
-    div.innerHTML = "<b>"+i.issue+"</b>";
+    div.innerHTML = "<b>" + (i["Issue"] || i.issue || "No title") + "</b>";
 
-    div.onclick = ()=> show(i);
+    div.onclick = ()=> showDetails(i);
 
     resultList.appendChild(div);
   });
 }
 
-/* ✅ DETAIL PANEL */
-function show(i){
+/* ✅ DETAILS */
+function showDetails(i){
 
-  let desc = (i.description + " " + i.rationale).trim();
+  let issue = i["Issue"] || i.issue;
+  let type = getVal(i,"Type of Issue","type");
+  let severity = getVal(i,"Severity","severity");
+
+  /* ✅ WCAG FIX */
+  let wcagLevel = getVal(i,"WCAG 2.0 Conformance Level","wcagLevel");
+  let wcagSC = getVal(i,"WCAG 2.0","wcagSC");
+
+  let description =
+    (getVal(i,"Issue Description","description") + " " +
+     getVal(i,"Rationale","rationale")).trim();
+
+  let suggestion = getVal(i,"Suggestion","suggestion");
 
   previewPanel.innerHTML = `
-    <h2>${i.issue}</h2>
+    <h2>${issue}</h2>
 
-    <p><b>Type:</b> ${i.type || "-"}</p>
-    <p><b>Severity:</b> ${i.severity || "-"}</p>
-    <p><b>WCAG:</b> ${i.wcagLevel || "-"} | ${i.wcagSC || "-"}</p>
+    <p><b>Type:</b> ${type}</p>
+    <p><b>Severity:</b> ${severity}</p>
+    <p><b>WCAG:</b> ${wcagLevel} | ${wcagSC}</p>
 
     <hr>
 
     <h3>Description</h3>
-    <p>${desc || "-"}</p>
+    <p>${description}</p>
 
     <h3>Suggestion</h3>
-    <p>${i.suggestion || "-"}</p>
+    <p>${suggestion}</p>
   `;
 }
 
