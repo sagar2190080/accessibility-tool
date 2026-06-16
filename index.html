@@ -17,7 +17,6 @@ header {
   justify-content:space-between;
 }
 
-/* DASHBOARD */
 .dashboard {
   display:flex;
   gap:10px;
@@ -36,20 +35,11 @@ header {
 .medium { background:#ffc107; color:black; }
 .low { background:#28a745; }
 
-/* FILTERS */
-.filters {
-  padding:10px;
-  background:white;
-  display:flex;
-  gap:10px;
-}
+.wrapper { display:flex; height:85vh; }
 
-/* LAYOUT */
-.wrapper { display:flex; height:75vh; }
 .left { width:40%; background:white; padding:10px; overflow:auto; }
 .right { width:60%; padding:20px; }
 
-/* SEARCH */
 .search-container { position:relative; }
 
 #suggestions {
@@ -60,22 +50,21 @@ header {
   max-height:200px;
   overflow:auto;
   display:none;
+  z-index:100;
 }
 
-/* LIST */
+.suggestion-item {
+  padding:8px;
+  cursor:pointer;
+}
+.suggestion-item:hover { background:#eef2ff; }
+
 .card {
   padding:10px;
   border-bottom:1px solid #eee;
   cursor:pointer;
 }
 .card:hover { background:#eef2ff; }
-
-/* GROUP */
-.group-title {
-  background:#ddd;
-  padding:5px;
-  font-weight:bold;
-}
 
 .code-block {
   background:#f4f4f4;
@@ -94,31 +83,10 @@ header {
 </header>
 
 <div class="dashboard">
-  <div id="totalBox" class="stat total">Total: 0</div>
-  <div id="highBox" class="stat high">High: 0</div>
-  <div id="mediumBox" class="stat medium">Medium: 0</div>
-  <div id="lowBox" class="stat low">Low: 0</div>
-</div>
-
-<div class="filters">
-  <select id="severityFilter">
-    <option value="">All Severity</option>
-    <option>High</option>
-    <option>Medium</option>
-    <option>Low</option>
-  </select>
-
-  <select id="levelFilter">
-    <option value="">All WCAG</option>
-    <option>A</option>
-    <option>AA</option>
-    <option>AAA</option>
-  </select>
-
-  <select id="viewMode">
-    <option value="list">List View</option>
-    <option value="group">WCAG Group View</option>
-  </select>
+  <div id="totalBox" class="stat total"></div>
+  <div id="highBox" class="stat high"></div>
+  <div id="mediumBox" class="stat medium"></div>
+  <div id="lowBox" class="stat low"></div>
 </div>
 
 <div class="wrapper">
@@ -127,6 +95,7 @@ header {
 
 <div class="search-container">
   <input id="searchBox" placeholder="Search..." style="width:100%;">
+  <div id="suggestions"></div>
 </div>
 
 <div id="resultList"></div>
@@ -141,74 +110,110 @@ header {
 
 <script>
 
-let issues=[], filtered=[];
+let issues = [];
+let filtered = [];
 
 function safe(v){ return (v||"").toString(); }
 
-/* LOAD */
-window.onload=function(){
+/* ✅ LOAD DATA */
+window.onload = function(){
 
   fetch("./repository.json")
-  .then(r=>r.json())
-  .then(data=>{
+  .then(res => res.json())
+  .then(data => {
 
-    issues=data;
-    filtered=data;
+    issues = data;
+    filtered = data;
 
     updateDashboard();
-    applyFilters();
+    render();
 
+    if(filtered.length > 0){
+      showPreview(filtered[0]);
+    }
+
+  })
+  .catch(()=>{
+    previewPanel.innerHTML="<h3 style='color:red;'>Error loading data</h3>";
   });
 };
 
-/* DASHBOARD */
+/* ✅ DASHBOARD */
 function updateDashboard(){
-
-  totalBox.innerText="Total: "+issues.length;
-  highBox.innerText="High: "+issues.filter(i=>i.severity==="High").length;
-  mediumBox.innerText="Medium: "+issues.filter(i=>i.severity==="Medium").length;
-  lowBox.innerText="Low: "+issues.filter(i=>i.severity==="Low").length;
+  totalBox.innerText="Total: " + issues.length;
+  highBox.innerText="High: " + issues.filter(i=>i.severity==="High").length;
+  mediumBox.innerText="Medium: " + issues.filter(i=>i.severity==="Medium").length;
+  lowBox.innerText="Low: " + issues.filter(i=>i.severity==="Low").length;
 }
 
-/* FILTER LOGIC */
-document.getElementById("searchBox").addEventListener("input",applyFilters);
-document.getElementById("severityFilter").addEventListener("change",applyFilters);
-document.getElementById("levelFilter").addEventListener("change",applyFilters);
-document.getElementById("viewMode").addEventListener("change",applyFilters);
+/* ✅ SEARCH + SUGGEST */
+document.getElementById("searchBox").addEventListener("input",function(){
 
-function applyFilters(){
-
-  let q = searchBox.value.toLowerCase();
-  let sev = severityFilter.value;
-  let lvl = levelFilter.value;
+  let q = this.value.toLowerCase();
 
   filtered = issues.filter(i => {
+    let text = (
+      safe(i.issue) + " " +
+      safe(i.description) + " " +
+      safe(i.suggestion)
+    ).toLowerCase();
 
-    let matchText =
-      safe(i.issue).toLowerCase().includes(q) ||
-      safe(i.description).toLowerCase().includes(q);
-
-    let matchSev = !sev || i.severity === sev;
-    let matchLvl = !lvl || i.wcagLevel === lvl;
-
-    return matchText && matchSev && matchLvl;
+    return text.includes(q);
   });
 
-  if(viewMode.value === "group"){
-    renderGrouped();
-  } else {
-    renderList();
-  }
+  render();
+  showSuggestions(q);
 
   if(filtered.length > 0){
     showPreview(filtered[0]);
   } else {
     previewPanel.innerHTML="<h3>No results</h3>";
   }
+});
+
+/* ✅ SUGGESTION DROPDOWN */
+function showSuggestions(q){
+
+  let box = document.getElementById("suggestions");
+
+  if(!q){
+    box.style.display="none";
+    return;
+  }
+
+  let matches = issues.filter(i=>{
+    let text = (
+      safe(i.issue) + " " + safe(i.description)
+    ).toLowerCase();
+
+    return text.includes(q);
+  }).slice(0,10);
+
+  box.innerHTML="";
+
+  matches.forEach(i=>{
+
+    let div=document.createElement("div");
+    div.className="suggestion-item";
+    div.innerText=i.issue;
+
+    div.onclick=function(){
+      searchBox.value=i.issue;
+      box.style.display="none";
+
+      filtered=[i];
+      render();
+      showPreview(i);
+    };
+
+    box.appendChild(div);
+  });
+
+  box.style.display = matches.length ? "block" : "none";
 }
 
-/* LIST VIEW */
-function renderList(){
+/* ✅ LIST */
+function render(){
 
   resultList.innerHTML="";
 
@@ -217,50 +222,15 @@ function renderList(){
     let div=document.createElement("div");
     div.className="card";
 
-    div.innerHTML=`<b>${i.issue}</b>`;
+    div.innerHTML = "<b>" + safe(i.issue) + "</b>";
 
-    div.onclick=()=>showPreview(i);
+    div.onclick = ()=>showPreview(i);
 
     resultList.appendChild(div);
   });
 }
 
-/* WCAG GROUP VIEW */
-function renderGrouped(){
-
-  resultList.innerHTML="";
-
-  let groups = {};
-
-  filtered.forEach(i=>{
-    let key = i.wcagSC || "Other";
-
-    if(!groups[key]) groups[key]=[];
-    groups[key].push(i);
-  });
-
-  for(let key in groups){
-
-    let title=document.createElement("div");
-    title.className="group-title";
-    title.innerText="WCAG "+key;
-
-    resultList.appendChild(title);
-
-    groups[key].forEach(i=>{
-
-      let div=document.createElement("div");
-      div.className="card";
-      div.innerText=i.issue;
-
-      div.onclick=()=>showPreview(i);
-
-      resultList.appendChild(div);
-    });
-  }
-}
-
-/* PREVIEW */
+/* ✅ PREVIEW */
 function showPreview(i){
 
   let parts = safe(i.description).split("Code Snippet:");
@@ -283,13 +253,13 @@ function showPreview(i){
   `;
 }
 
-/* EXPORT */
+/* ✅ EXPORT */
 function generateReport(){
 
-  let rows=[["Issue","Severity","WCAG"]];
+  let rows=[["Issue","Severity"]];
 
   issues.forEach(i=>{
-    rows.push([i.issue,i.severity,i.wcagSC]);
+    rows.push([i.issue,i.severity]);
   });
 
   let ws=XLSX.utils.aoa_to_sheet(rows);
