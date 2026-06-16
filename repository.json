@@ -1,0 +1,20 @@
+[
+  {
+    "type": "ARIA",
+    "issue": "ARIA Role and state defined inappropriately",
+    "description": "Using incorrect ARIA roles.\nCode Snippet:\n<div role='button'></div>",
+    "suggestion": "Use correct semantic HTML or proper ARIA roles",
+    "severity": "High",
+    "wcagLevel": "A",
+    "wcagSC": "4.1.2"
+  },
+  {
+    "type": "Color",
+    "issue": "Insufficient color contrast",
+    "description": "Contrast between text and background is too low",
+    "suggestion": "Ensure minimum 4.5:1 contrast ratio",
+    "severity": "High",
+    "wcagLevel": "AA",
+    "wcagSC": "1.4.3"
+  }
+]
