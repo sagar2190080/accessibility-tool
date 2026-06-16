@@ -2,39 +2,15 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Import Excel → Save</title>
-
+<title>Import Excel</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
-<style>
-body { font-family: Arial; margin: 30px; }
-
-.status {
-  margin-top: 20px;
-  padding: 10px;
-  border-radius: 5px;
-  display: none;
-}
-
-.success {
-  background: #d4edda;
-  color: #155724;
-}
-
-.error {
-  background: #f8d7da;
-  color: #721c24;
-}
-</style>
 </head>
 
 <body>
 
-<h2>Import Excel → Save Repository</h2>
+<h2>Upload Excel File</h2>
 
 <input type="file" id="upload" accept=".xlsx">
-
-<div id="statusBox" class="status"></div>
 
 <script>
 
@@ -42,104 +18,46 @@ document.getElementById("upload").addEventListener("change", function(e){
 
   const file = e.target.files[0];
 
-  if(!file){
-    showError("No file selected");
-    return;
-  }
-
   const reader = new FileReader();
 
   reader.onload = function(evt){
 
-    try {
+    const data = new Uint8Array(evt.target.result);
+    const wb = XLSX.read(data, { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
 
-      const data = new Uint8Array(evt.target.result);
-      const wb = XLSX.read(data, { type: 'array' });
+    // ✅ CRITICAL FIX: use header names
+    const json = XLSX.utils.sheet_to_json(ws);
 
-      // ✅ Auto-detect first sheet (SAFE FIX)
-      const sheetName = wb.SheetNames[0];
-      const ws = wb.Sheets[sheetName];
+    let clean = [];
 
-      if(!ws){
-        showError("No sheet found in Excel");
-        return;
-      }
+    json.forEach(r => {
 
-      const json = XLSX.utils.sheet_to_json(ws);
+      // ✅ skip junk rows
+      if(!r["Issue"] || r["Issue"].length < 5) return;
 
-/* ✅ FIX: DO NOT USE index-based columns */
-let issues = [];
+      clean.push({
+        "Type of Issue": r["Type of Issue"] || "",
+        "Issue": r["Issue"] || "",
+        "Issue Description": r["Issue Description"] || "",
+        "Rationale": r["Rationale"] || "",
+        "Suggestion": r["Suggestion"] || "",
+        "Severity": r["Severity"] || "",
+        "WCAG 2.0 Conformance Level": r["WCAG 2.0 Conformance Level"] || "",
+        "WCAG 2.0": r["WCAG 2.0"] || ""
+      });
 
-json.forEach(row => {
+    });
 
-  issues.push({
-    type: row["Type of Issue"] || "",
-    issue: row["Issue"] || "",
-    description: (row["Issue Description"] || "") + " " + (row["Rationale"] || ""),
-    suggestion: row["Suggestion"] || "",
-    severity: row["Severity"] || "",
-    wcagLevel: row["WCAG 2.0 Conformance Level"] || "",
-    wcagSC: row["WCAG 2.0"] || ""
-  });
+    localStorage.setItem("repoData", JSON.stringify(clean));
 
-});
-
-      let issues = [];
-
-      for(let i=1; i<json.length; i++){
-
-        const r = json[i];
-
-        if(r[1]){ // ensure issue exists
-
-          issues.push({
-            type: r[0] || "",
-            issue: r[1] || "",
-            description: r[2] || "",
-            rationale: r[3] || "",
-            suggestion: r[4] || "",
-            severity: r[5] || "",
-            wcagLevel: r[6] || "",
-            wcagSC: r[7] || ""
-          });
-        }
-      }
-
-      if(issues.length === 0){
-        showError("No valid issues found");
-        return;
-      }
-
-      // ✅ Save to localStorage
-      localStorage.setItem("repoData", JSON.stringify(issues));
-
-      showSuccess("✅ Imported successfully: " + issues.length + " issues saved");
-
-    } catch(err){
-      console.error(err);
-      showError("Error processing file");
-    }
+    alert("✅ Clean data ready!");
 
   };
 
   reader.readAsArrayBuffer(file);
+
 });
-
-/* ✅ UI FEEDBACK */
-
-function showSuccess(msg){
-  const box = document.getElementById("statusBox");
-  box.className = "status success";
-  box.style.display = "block";
-  box.innerText = msg;
-}
-
-function showError(msg){
-  const box = document.getElementById("statusBox");
-  box.className = "status error";
-  box.style.display = "block";
-  box.innerText = msg;
-}
 
 </script>
 
