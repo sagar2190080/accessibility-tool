@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>Clean JSON Tool</h2>
+<input type="file" id="fileInput">
+
+<script>
+
+document.getElementById("fileInput").addEventListener("change", function(e){
+
+  const file = e.target.files[0];
+  const reader = new FileReader();
+
+  reader.onload = function(evt){
+
+    let raw = JSON.parse(evt.target.result);
+
+    let cleaned = [];
+
+    let current = null;
+
+    raw.forEach(row => {
+
+      // ✅ skip completely empty rows
+      if(!row["Issue"] && !row["Type of Issue"]) return;
+
+      // ✅ start new issue
+      if(row["Issue"] && row["Issue"].length > 5){
+
+        current = {
+          "Type of Issue": row["Type of Issue"] || "",
+          "Issue": row["Issue"] || "",
+          "Issue Description": row["Issue Description"] || "",
+          "Rationale": row["Rationale"] || "",
+          "Suggestion": row["Suggestion"] || "",
+          "Severity": row["Severity"] || "",
+          "WCAG 2.0 Conformance Level": row["WCAG 2.0 Conformance Level"] || "",
+          "WCAG 2.0": row["WCAG 2.0"] || ""
+        };
+
+        cleaned.push(current);
+      }
+
+      // ✅ merge broken rows (VERY IMPORTANT FIX)
+      else if(current){
+
+        current["Issue Description"] += " " + (row["Issue Description"] || "");
+        current["Rationale"] += " " + (row["Rationale"] || "");
+        current["Suggestion"] += " " + (row["Suggestion"] || "");
+
+        if(!current["Severity"] && row["Severity"])
+          current["Severity"] = row["Severity"];
+      }
+
+    });
+
+    // ✅ download clean file
+    let blob = new Blob([JSON.stringify(cleaned, null, 2)], {type: "application/json"});
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "cleaned_repository.json";
+    a.click();
+
+    alert("✅ JSON cleaned & downloaded!");
+
+  };
+
+  reader.readAsText(file);
+
+});
+
+</script>
+
+</body>
+</html>
