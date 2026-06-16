@@ -51,10 +51,8 @@ input {
 <div class="wrapper">
 
 <div class="left">
-
 <input id="searchBox" placeholder="Search...">
 <div id="resultList"></div>
-
 </div>
 
 <div class="right" id="previewPanel">
@@ -68,14 +66,35 @@ input {
 let issues = [];
 let filtered = [];
 
+/* ✅ FIX: SAFE VALUE FUNCTION */
+function safe(val){
+  if(!val || val.trim()==="") return "-";
+  return val;
+}
+
+/* ✅ FIX: HANDLE BAD SEVERITY DATA */
+function fixSeverity(i){
+  if(i["Severity"]) return i["Severity"];
+
+  // fallback patterns in your JSON
+  if(i["Issue"]==="High" || i["Issue"]==="Medium" || i["Issue"]==="Low")
+    return i["Issue"];
+
+  if(i["Suggestion"] && i["Suggestion"].includes("High"))
+    return "High";
+
+  return "-";
+}
+
+/* ✅ LOAD DATA */
 window.onload = function(){
 
   fetch("./repository.json")
   .then(res => res.json())
   .then(data => {
 
-    // ✅ Remove empty / junk rows
-    issues = data.filter(item => item["Issue"] && item["Issue"].trim() !== "");
+    // ✅ remove garbage rows (very important for your file)
+    issues = data.filter(x => x["Issue"] && x["Issue"].length > 5);
 
     filtered = issues;
 
@@ -84,7 +103,6 @@ window.onload = function(){
     if(filtered.length){
       showDetails(filtered[0]);
     }
-
   });
 
 };
@@ -104,7 +122,7 @@ searchBox.addEventListener("input", function(){
 
 });
 
-/* ✅ LEFT LIST */
+/* ✅ LEFT SIDE LIST */
 function renderList(){
 
   resultList.innerHTML = "";
@@ -118,33 +136,38 @@ function renderList(){
     div.onclick = () => showDetails(i);
 
     resultList.appendChild(div);
-
   });
 
 }
 
-/* ✅ RIGHT PANEL (FULL FIX HERE) */
+/* ✅ RIGHT SIDE DETAILS (FINAL FIX) */
 function showDetails(i){
+
+  let type = safe(i["Type of Issue"]);
+  let severity = fixSeverity(i);
+
+  let wcagLevel = safe(i["WCAG 2.0 Conformance Level"]);
+  let wcagSC = safe(i["WCAG 2.0"]);
+
+  let description = ((i["Issue Description"] || "") + " " +
+                     (i["Rationale"] || "")).trim();
+
+  let suggestion = safe(i["Suggestion"]);
 
   previewPanel.innerHTML = `
     <h2>${i["Issue"]}</h2>
 
-    <p><b>Type:</b> ${i["Type of Issue"] || "-"}</p>
-    <p><b>Severity:</b> ${i["Severity"] || "-"}</p>
-
-    <p><b>WCAG:</b> 
-      ${i["WCAG 2.0 Conformance Level"] || "-"} 
-      | 
-      ${i["WCAG 2.0"] || "-"}
-    </p>
+    <p><b>Type:</b> ${type}</p>
+    <p><b>Severity:</b> ${severity}</p>
+    <p><b>WCAG:</b> ${wcagLevel} | ${wcagSC}</p>
 
     <hr>
 
     <h3>Description</h3>
-    <p>${(i["Issue Description"] || "") + " " + (i["Rationale"] || "")}</p>
+    <p>${safe(description)}</p>
 
     <h3>Suggestion</h3>
-    <p>${i["Suggestion"] || "-"}</p>
+    <p>${suggestion}</p>
   `;
 }
 
