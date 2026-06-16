@@ -1,0 +1,12 @@
+[
+  {
+    "type": "ARIA",
+    "issue": "ARIA role=\"menu\" defined inappropriately",
+    "description": "The role tab is defined incorrectly.\n\nCode Snippet:\n\n<a href='#'>Example</a>",
+    "rationale": "Screen readers misinterpret the role.",
+    "suggestion": "Remove incorrect roles and use proper ARIA.",
+    "severity": "High",
+    "wcagLevel": "A",
+    "wcagSC": "2.1.1"
+  }
+]

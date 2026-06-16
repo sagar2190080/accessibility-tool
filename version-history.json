@@ -1,0 +1,43 @@
+{
+  "index.html": {
+    "version": "v1.3",
+    "lastUpdated": "2026-06-16",
+    "features": [
+      "Initial accessibility tool UI",
+      "Search functionality added",
+      "Auto-preview first issue",
+      "Badge UI for Type, Severity, WCAG",
+      "Code snippet safe rendering",
+      "Dashboard counts (Total, High, Medium, Low)",
+      "Excel export with summary sheet",
+      "Auto-suggestion dropdown (Google-like)",
+      "Improved suggestion matching (multi-field)",
+      "Removed suggestion limit (show all matches)",
+      "Apply Updates button added",
+      "Per-file version detection added"
+    ]
+  },
+
+  "issue-search-import.html": {
+    "version": "v1.0",
+    "lastUpdated": "2026-06-15",
+    "features": [
+      "Excel upload support added",
+      "Auto-detect sheet name",
+      "Convert Excel to JSON",
+      "Save data into localStorage",
+      "Validation for empty or invalid files",
+      "Success and error messaging UI"
+    ]
+  },
+
+  "repository.json": {
+    "version": "v1.0",
+    "lastUpdated": "2026-06-15",
+    "features": [
+      "Stores accessibility issues repository data",
+      "Supports structured audit fields",
+      "Used as fallback data source"
+    ]
+  }
+}

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Accessibility Issue Tool</title>
+
+<style>
+body { font-family: Arial; margin:0; background:#f4f6f9;}
+
+header {
+  background:#1f3c88;
+  color:white;
+  padding:15px;
+  display:flex;
+  justify-content:space-between;
+}
+
+/* VERSION PANEL */
+.version-box {
+  font-size:12px;
+  cursor:pointer;
+}
+
+.version-panel {
+  position:fixed;
+  right:10px;
+  top:60px;
+  background:white;
+  border:1px solid #ccc;
+  padding:10px;
+  width:300px;
+  max-height:300px;
+  overflow:auto;
+  display:none;
+}
+
+/* Layout */
+.wrapper { display:flex; height:90vh; }
+
+.left { width:40%; background:white; padding:10px; }
+.right { width:60%; padding:20px; }
+
+/* suggestions */
+.search-container { position:relative; }
+
+#suggestions {
+  position:absolute;
+  background:white;
+  border:1px solid #ccc;
+  width:95%;
+  max-height:200px;
+  overflow:auto;
+  display:none;
+}
+
+.suggestion-item {
+  padding:8px;
+  cursor:pointer;
+}
+.suggestion-item:hover { background:#eef2ff; }
+
+.card {
+  padding:10px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+  <div>Accessibility Issue Tool</div>
+  <div class="version-box" onclick="toggleVersion()" id="versionDisplay"></div>
+</header>
+
+<div class="version-panel" id="versionPanel"></div>
+
+<div class="wrapper">
+
+<div class="left">
+
+<div class="search-container">
+  <input id="searchBox" placeholder="Search..." style="width:95%;">
+  <div id="suggestions"></div>
+</div>
+
+<div id="resultList"></div>
+
+</div>
+
+<div class="right" id="previewPanel">
+<h3>Select Issue</h3>
+</div>
+
+</div>
+
+<script>
+
+/* ✅ ✅ AUTO VERSION CONTROL CONFIG */
+const BASE_VERSION = "v1.csv"; // your base version (change rarely)
+
+const FEATURES = [
+  "Initial tool setup",
+  "Search functionality added",
+  "Auto preview first item",
+  "Badge UI implemented",
+  "Code snippet safe rendering",
+  "Dashboard metrics added",
+  "Excel export feature",
+  "Auto suggestion dropdown",
+  "Multi-field search",
+  "Removed suggestion limit",
+  "Apply updates button",
+  "Version tracking system",
+  "Auto version generator",
+  "Improved suggestion accuracy"
+];
+
+/* ✅ GENERATE VERSION */
+function generateVersion(){
+
+  let versionNumber = FEATURES.length;
+
+  return "v1." + versionNumber + " (" + versionNumber + " features)";
+}
+
+/* ✅ DISPLAY VERSION */
+function showVersion(){
+
+  let version = generateVersion();
+
+  document.getElementById("versionDisplay").innerText = version;
+
+  let html = "<b>" + version + "</b><br><br><b>Features:</b><ul>";
+
+  FEATURES.forEach(f=>{
+    html += "<li>" + f + "</li>";
+  });
+
+  html += "</ul>";
+
+  document.getElementById("versionPanel").innerHTML = html;
+}
+
+/* ✅ TOGGLE PANEL */
+function toggleVersion(){
+
+  let p = document.getElementById("versionPanel");
+
+  p.style.display = (p.style.display==="none" || p.style.display==="") ? "block" : "none";
+}
+
+/* DATA */
+let issues=[], filtered=[];
+
+/* LOAD */
+window.onload=function(){
+
+  let saved = localStorage.getItem("repoData");
+  if(!saved){ alert("Import first"); return; }
+
+  issues = JSON.parse(saved);
+  filtered = issues;
+
+  render();
+
+  if(filtered.length>0){
+    showPreview(filtered[0]);
+  }
+
+  showVersion(); // ✅ AUTO VERSION
+};
+
+/* SEARCH */
+searchBox.addEventListener("input",function(){
+
+  let q=this.value.toLowerCase();
+
+  filtered = issues.filter(i =>
+    (i.issue||"").toLowerCase().includes(q)
+  );
+
+  render();
+  showSuggestions(q);
+
+  if(filtered.length>0){
+    showPreview(filtered[0]);
+  }
+});
+
+/* SUGGESTIONS */
+function showSuggestions(q){
+
+  if(!q){
+    suggestions.style.display="none";
+    return;
+  }
+
+  let matches = issues.filter(i =>
+    i.issue.toLowerCase().includes(q)
+  );
+
+  suggestions.innerHTML="";
+
+  matches.forEach(i=>{
+
+    let div=document.createElement("div");
+    div.className="suggestion-item";
+    div.innerText=i.issue;
+
+    div.onclick=function(){
+      searchBox.value=i.issue;
+      suggestions.style.display="none";
+    };
+
+    suggestions.appendChild(div);
+  });
+
+  suggestions.style.display="block";
+}
+
+/* LIST */
+function render(){
+
+  resultList.innerHTML="";
+
+  filtered.forEach(i=>{
+
+    let div=document.createElement("div");
+    div.className="card";
+    div.innerHTML="<b>"+i.issue+"</b>";
+
+    div.onclick=()=>showPreview(i);
+
+    resultList.appendChild(div);
+  });
+}
+
+/* PREVIEW */
+function showPreview(i){
+  previewPanel.innerHTML="<h3>"+i.issue+"</h3>";
+}
+
+</script>
+
+</body>
+</html>

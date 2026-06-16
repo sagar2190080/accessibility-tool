@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Import Excel → Save</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+body { font-family: Arial; margin: 30px; }
+
+.status {
+  margin-top: 20px;
+  padding: 10px;
+  border-radius: 5px;
+  display: none;
+}
+
+.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.error {
+  background: #f8d7da;
+  color: #721c24;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Import Excel → Save Repository</h2>
+
+<input type="file" id="upload" accept=".xlsx">
+
+<div id="statusBox" class="status"></div>
+
+<script>
+
+document.getElementById("upload").addEventListener("change", function(e){
+
+  const file = e.target.files[0];
+
+  if(!file){
+    showError("No file selected");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function(evt){
+
+    try {
+
+      const data = new Uint8Array(evt.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+
+      // ✅ Auto-detect first sheet (SAFE FIX)
+      const sheetName = wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+
+      if(!ws){
+        showError("No sheet found in Excel");
+        return;
+      }
+
+      const json = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+      if(json.length <= 1){
+        showError("Excel has no data rows");
+        return;
+      }
+
+      let issues = [];
+
+      for(let i=1; i<json.length; i++){
+
+        const r = json[i];
+
+        if(r[1]){ // ensure issue exists
+
+          issues.push({
+            type: r[0] || "",
+            issue: r[1] || "",
+            description: r[2] || "",
+            rationale: r[3] || "",
+            suggestion: r[4] || "",
+            severity: r[5] || "",
+            wcagLevel: r[6] || "",
+            wcagSC: r[7] || ""
+          });
+        }
+      }
+
+      if(issues.length === 0){
+        showError("No valid issues found");
+        return;
+      }
+
+      // ✅ Save to localStorage
+      localStorage.setItem("repoData", JSON.stringify(issues));
+
+      showSuccess("✅ Imported successfully: " + issues.length + " issues saved");
+
+    } catch(err){
+      console.error(err);
+      showError("Error processing file");
+    }
+
+  };
+
+  reader.readAsArrayBuffer(file);
+});
+
+/* ✅ UI FEEDBACK */
+
+function showSuccess(msg){
+  const box = document.getElementById("statusBox");
+  box.className = "status success";
+  box.style.display = "block";
+  box.innerText = msg;
+}
+
+function showError(msg){
+  const box = document.getElementById("statusBox");
+  box.className = "status error";
+  box.style.display = "block";
+  box.innerText = msg;
+}
+
+</script>
+
+</body>
+</html>
