@@ -10,6 +10,7 @@ body {
   margin:0;
 }
 
+/* HEADER */
 header {
   background:#1f3c88;
   color:white;
@@ -33,7 +34,33 @@ header {
 .right {
   width:60%;
   padding:20px;
-  overflow:auto;   /* ✅ FIX OVERLAP */
+  overflow:auto; /* ✅ FIX overlap */
+}
+
+/* SEARCH */
+input {
+  width:100%;
+  padding:8px;
+}
+
+/* SUGGESTIONS */
+#suggestions {
+  position:absolute;
+  background:white;
+  width:95%;
+  border:1px solid #ccc;
+  max-height:250px;
+  overflow:auto;
+  display:none;
+  z-index:1000;
+}
+
+.suggestion-item {
+  padding:8px;
+  cursor:pointer;
+}
+.suggestion-item:hover {
+  background:#e6f0ff;
 }
 
 /* LIST */
@@ -46,35 +73,9 @@ header {
   background:#e6f0ff;
 }
 
-/* SEARCH */
-input {
-  width:100%;
-  padding:8px;
-  margin-bottom:5px;
-}
-
-/* ✅ AUTOSUGGEST BOX */
-#suggestions {
-  position:absolute;
-  background:white;
-  width:95%;
-  border:1px solid #ccc;
-  max-height:200px;
-  overflow:auto;
-  display:none;
-  z-index:1000;
-}
-
-.suggestion-item {
-  padding:8px;
-  cursor:pointer;
-}
-.suggestion-item:hover {
-  background:#eef;
-}
-
 /* TEXT */
 h2,h3 { margin-top:10px; }
+
 </style>
 </head>
 
@@ -88,8 +89,10 @@ h2,h3 { margin-top:10px; }
 
 <div class="left">
 
-<input id="searchBox" placeholder="Search...">
+<input id="searchBox" placeholder="Search..." autocomplete="off">
 <div id="suggestions"></div>
+
+<br>
 
 <div id="resultList"></div>
 
@@ -106,48 +109,53 @@ h2,h3 { margin-top:10px; }
 let issues = [];
 let filtered = [];
 
+/* ✅ SAFE VALUE FUNCTION */
+function getVal(obj, ...keys){
+  for(let k of keys){
+    if(obj[k]) return obj[k];
+  }
+  return "-";
+}
+
 /* ✅ LOAD DATA */
 window.onload = function(){
 
   let saved = localStorage.getItem("repoData");
 
   if(!saved){
-    previewPanel.innerHTML = "<h3>Please import Excel first</h3>";
+    document.getElementById("previewPanel").innerHTML =
+      "<h3>Please import Excel first</h3>";
     return;
   }
 
   issues = JSON.parse(saved);
+
   filtered = issues;
 
   renderList();
+
   if(filtered.length){
     showDetails(filtered[0]);
   }
 };
 
-/* ✅ SMART VALUE GETTER (FIX WCAG ISSUE) */
-function getVal(obj, key1, key2){
-  return obj[key1] || obj[key2] || "-";
-}
-
-/* ✅ SEARCH + SUGGESTIONS */
+/* ✅ SEARCH + SUGGESTION */
 searchBox.addEventListener("input", function(){
 
   let q = this.value.toLowerCase().trim();
 
-  /* FILTER */
+  /* FILTER LIST */
   filtered = issues.filter(i =>
     JSON.stringify(i).toLowerCase().includes(q)
   );
 
   renderList();
 
-  /* ✅ SUGGESTIONS FIXED */
+  /* AUTOSUGGEST */
   showSuggestions(q);
-
 });
 
-/* ✅ SUGGESTION FUNCTION */
+/* ✅ AUTOSUGGEST FULL MATCH (NO LIMIT) */
 function showSuggestions(q){
 
   let box = document.getElementById("suggestions");
@@ -157,11 +165,9 @@ function showSuggestions(q){
     return;
   }
 
-  let matches = issues
-    .filter(i =>
-      (i["Issue"] || i.issue || "").toLowerCase().includes(q)
-    )
-    .slice(0,5);  // top 5
+  let matches = issues.filter(i =>
+    (i["Issue"] || i.issue || "").toLowerCase().includes(q)
+  );
 
   box.innerHTML = "";
 
@@ -169,14 +175,21 @@ function showSuggestions(q){
 
     let div = document.createElement("div");
     div.className="suggestion-item";
-    div.innerText = i["Issue"] || i.issue;
+
+    let text = i["Issue"] || i.issue;
+
+    div.innerText = text;
 
     div.onclick = function(){
-      searchBox.value = div.innerText;
+
+      document.getElementById("searchBox").value = text;
+
       box.style.display="none";
 
       filtered = [i];
+
       renderList();
+
       showDetails(i);
     };
 
@@ -186,28 +199,30 @@ function showSuggestions(q){
   box.style.display = matches.length ? "block" : "none";
 }
 
-/* ✅ LIST */
+/* ✅ LIST RENDER */
 function renderList(){
 
-  resultList.innerHTML="";
+  resultList.innerHTML = "";
 
   filtered.forEach(i => {
 
     let div = document.createElement("div");
-    div.className="card";
 
-    div.innerHTML = "<b>" + (i["Issue"] || i.issue || "No title") + "</b>";
+    div.className = "card";
 
-    div.onclick = ()=> showDetails(i);
+    div.innerHTML = "<b>" + (i["Issue"] || i.issue || "No Title") + "</b>";
+
+    div.onclick = () => showDetails(i);
 
     resultList.appendChild(div);
   });
+
 }
 
-/* ✅ DETAILS */
+/* ✅ DETAILS PANEL */
 function showDetails(i){
 
-  let issue = i["Issue"] || i.issue;
+  let issue = getVal(i,"Issue","issue");
   let type = getVal(i,"Type of Issue","type");
   let severity = getVal(i,"Severity","severity");
 
@@ -221,7 +236,7 @@ function showDetails(i){
 
   let suggestion = getVal(i,"Suggestion","suggestion");
 
-  previewPanel.innerHTML = `
+  document.getElementById("previewPanel").innerHTML = `
     <h2>${issue}</h2>
 
     <p><b>Type:</b> ${type}</p>
