@@ -36,7 +36,6 @@ header {
 .low { background:#28a745; }
 
 .wrapper { display:flex; height:85vh; }
-
 .left { width:40%; background:white; padding:10px; overflow:auto; }
 .right { width:60%; padding:20px; }
 
@@ -50,13 +49,9 @@ header {
   max-height:200px;
   overflow:auto;
   display:none;
-  z-index:100;
 }
 
-.suggestion-item {
-  padding:8px;
-  cursor:pointer;
-}
+.suggestion-item { padding:8px; cursor:pointer; }
 .suggestion-item:hover { background:#eef2ff; }
 
 .card {
@@ -71,7 +66,6 @@ header {
   padding:10px;
   font-family:monospace;
 }
-
 </style>
 </head>
 
@@ -110,51 +104,63 @@ header {
 
 <script>
 
-let issues = [];
-let filtered = [];
+let issues=[], filtered=[];
+
+/* ✅ UNIVERSAL FIELD MAPPER (KEY FIX) */
+function mapData(obj){
+
+  return {
+    type: obj.type || obj.Type || "",
+    issue: obj.issue || obj.Issue || "",
+    description: obj.description || obj.Description || "",
+    suggestion: obj.suggestion || obj.Suggestion || "",
+    severity: obj.severity || obj.Severity || "",
+    wcagLevel: obj.wcagLevel || obj.Level || obj.WCAG || "",
+    wcagSC: obj.wcagSC || obj.SC || obj["Success Criteria"] || ""
+  };
+}
 
 function safe(v){ return (v||"").toString(); }
 
 /* ✅ LOAD DATA */
-window.onload = function(){
+window.onload=function(){
 
   fetch("./repository.json")
-  .then(res => res.json())
-  .then(data => {
+  .then(res=>res.json())
+  .then(data=>{
 
-    issues = data;
-    filtered = data;
+    issues = data.map(mapData); // ✅ FIX APPLIED HERE
+    filtered = issues;
 
     updateDashboard();
     render();
 
-    if(filtered.length > 0){
+    if(filtered.length){
       showPreview(filtered[0]);
     }
 
-  })
-  .catch(()=>{
-    previewPanel.innerHTML="<h3 style='color:red;'>Error loading data</h3>";
   });
 };
 
-/* ✅ DASHBOARD */
+/* DASHBOARD */
 function updateDashboard(){
-  totalBox.innerText="Total: " + issues.length;
-  highBox.innerText="High: " + issues.filter(i=>i.severity==="High").length;
-  mediumBox.innerText="Medium: " + issues.filter(i=>i.severity==="Medium").length;
-  lowBox.innerText="Low: " + issues.filter(i=>i.severity==="Low").length;
+
+  totalBox.innerText="Total: "+issues.length;
+  highBox.innerText="High: "+issues.filter(i=>i.severity==="High").length;
+  mediumBox.innerText="Medium: "+issues.filter(i=>i.severity==="Medium").length;
+  lowBox.innerText="Low: "+issues.filter(i=>i.severity==="Low").length;
 }
 
-/* ✅ SEARCH + SUGGEST */
-document.getElementById("searchBox").addEventListener("input",function(){
+/* SEARCH */
+searchBox.addEventListener("input",function(){
 
-  let q = this.value.toLowerCase();
+  let q=this.value.toLowerCase();
 
-  filtered = issues.filter(i => {
+  filtered=issues.filter(i=>{
+
     let text = (
-      safe(i.issue) + " " +
-      safe(i.description) + " " +
+      safe(i.issue)+" "+
+      safe(i.description)+" "+
       safe(i.suggestion)
     ).toLowerCase();
 
@@ -164,32 +170,26 @@ document.getElementById("searchBox").addEventListener("input",function(){
   render();
   showSuggestions(q);
 
-  if(filtered.length > 0){
+  if(filtered.length){
     showPreview(filtered[0]);
   } else {
     previewPanel.innerHTML="<h3>No results</h3>";
   }
 });
 
-/* ✅ SUGGESTION DROPDOWN */
+/* SUGGESTIONS */
 function showSuggestions(q){
 
-  let box = document.getElementById("suggestions");
-
   if(!q){
-    box.style.display="none";
+    suggestions.style.display="none";
     return;
   }
 
-  let matches = issues.filter(i=>{
-    let text = (
-      safe(i.issue) + " " + safe(i.description)
-    ).toLowerCase();
+  let matches=issues.filter(i=>
+    safe(i.issue).toLowerCase().includes(q)
+  ).slice(0,10);
 
-    return text.includes(q);
-  }).slice(0,10);
-
-  box.innerHTML="";
+  suggestions.innerHTML="";
 
   matches.forEach(i=>{
 
@@ -199,20 +199,20 @@ function showSuggestions(q){
 
     div.onclick=function(){
       searchBox.value=i.issue;
-      box.style.display="none";
+      suggestions.style.display="none";
 
       filtered=[i];
       render();
       showPreview(i);
     };
 
-    box.appendChild(div);
+    suggestions.appendChild(div);
   });
 
-  box.style.display = matches.length ? "block" : "none";
+  suggestions.style.display="block";
 }
 
-/* ✅ LIST */
+/* LIST */
 function render(){
 
   resultList.innerHTML="";
@@ -222,18 +222,18 @@ function render(){
     let div=document.createElement("div");
     div.className="card";
 
-    div.innerHTML = "<b>" + safe(i.issue) + "</b>";
+    div.innerHTML="<b>"+safe(i.issue)+"</b>";
 
-    div.onclick = ()=>showPreview(i);
+    div.onclick=()=>showPreview(i);
 
     resultList.appendChild(div);
   });
 }
 
-/* ✅ PREVIEW */
+/* PREVIEW */
 function showPreview(i){
 
-  let parts = safe(i.description).split("Code Snippet:");
+  let parts=safe(i.description).split("Code Snippet:");
 
   previewPanel.innerHTML=`
     <h3>${i.issue}</h3>
@@ -253,7 +253,7 @@ function showPreview(i){
   `;
 }
 
-/* ✅ EXPORT */
+/* EXPORT */
 function generateReport(){
 
   let rows=[["Issue","Severity"]];
