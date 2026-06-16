@@ -1,87 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Accessibility Tool</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+body { font-family: Arial; margin:0; background:#f4f6f9;}
+
+header {
+  background:#1f3c88;
+  color:white;
+  padding:15px;
+  display:flex;
+  justify-content:space-between;
+}
+
+.dashboard {
+  display:flex;
+  gap:10px;
+  padding:10px;
+  background:white;
+}
+.stat {
+  flex:1;
+  padding:10px;
+  border-radius:6px;
+  color:white;
+  text-align:center;
+}
+.total { background:#007bff; }
+.high { background:#dc3545; }
+.medium { background:#ffc107; color:black; }
+.low { background:#28a745; }
+
+.wrapper { display:flex; height:85vh; }
+
+.left { width:40%; background:white; padding:10px; overflow:auto; }
+.right { width:60%; padding:20px; }
+
+.search-container { position:relative; }
+
+#suggestions {
+  position:absolute;
+  width:100%;
+  background:white;
+  border:1px solid #ccc;
+  max-height:200px;
+  overflow:auto;
+  display:none;
+}
+
+.suggestion-item {
+  padding:8px;
+  cursor:pointer;
+}
+.suggestion-item:hover { background:#eef2ff; }
+
+.card {
+  padding:10px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+}
+.card:hover { background:#eef2ff; }
+
+.badge {
+  display:inline-block;
+  padding:3px 6px;
+  border-radius:10px;
+  font-size:11px;
+  color:white;
+}
+.badge-type { background:#6c757d; }
+.badge-high { background:#dc3545; }
+.badge-medium { background:#ffc107; color:black; }
+.badge-low { background:#28a745; }
+
+.code-block {
+  background:#f4f4f4;
+  padding:10px;
+  font-family:monospace;
+  white-space:pre-wrap;
+}
+
+/* Version Panel */
+.version-panel {
+  position:fixed;
+  top:60px;
+  right:10px;
+  width:300px;
+  background:white;
+  border:1px solid #ccc;
+  padding:10px;
+  display:none;
+  max-height:300px;
+  overflow:auto;
+}
+button {
+  margin-left:5px;
+  padding:5px 10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+  <div>Accessibility Tool 🚀</div>
+  <div>
+    <button onclick="toggleVersion()">Version</button>
+    <button onclick="generateReport()">Export Excel</button>
+  </div>
+</header>
+
+<div class="dashboard">
+  <div class="stat total" id="totalBox"></div>
+  <div class="stat high" id="highBox"></div>
+  <div class="stat medium" id="mediumBox"></div>
+  <div class="stat low" id="lowBox"></div>
+</div>
+
+<div id="versionPanel" class="version-panel"></div>
+
+<div class="wrapper">
+
+<div class="left">
+
+<div class="search-container">
+  <input id="searchBox" placeholder="Search..." style="width:100%;">
+  <div id="suggestions"></div>
+</div>
+
+<div id="resultList"></div>
+
+</div>
+
+<div class="right" id="previewPanel">
+<h3>Loading data...</h3>
+</div>
+
+</div>
 
 <script>
 
-/* ✅ SAFE FIELD ACCESSOR (KEY FIX) */
-function getField(obj, key){
-  return obj[key] 
-      || obj[key.toLowerCase()] 
-      || obj[key.toUpperCase()] 
-      || "";
+/* ✅ AUTO VERSION */
+const FEATURES = [
+  "GitHub data loading",
+  "Search + filter",
+  "Auto suggestion dropdown",
+  "Auto preview first result",
+  "Code snippet rendering safe",
+  "Dashboard counts",
+  "Excel export"
+];
+
+function showVersion(){
+  let version = "v1." + FEATURES.length;
+
+  let html = `<b>${version}</b><ul>`;
+  FEATURES.forEach(f => html += `<li>${f}</li>`);
+  html += "</ul>";
+
+  versionPanel.innerHTML = html;
 }
 
-let issues=[], filtered=[];
+function toggleVersion(){
+  versionPanel.style.display =
+    (versionPanel.style.display==="block")?"none":"block";
+}
+
+/* ✅ SAFE ACCESS */
+function safe(v){
+  return (v || "").toString();
+}
 
 /* ✅ LOAD DATA */
+let issues=[], filtered=[];
+
 window.onload=function(){
 
   fetch("./repository.json")
-  .then(res=>res.json())
+  .then(res=>{
+    if(!res.ok){
+      throw new Error("repository.json not found");
+    }
+    return res.json();
+  })
   .then(data=>{
 
-    issues=data.map(i=>({
-      type: getField(i,"type"),
-      issue: getField(i,"issue") || getField(i,"Issue"),
-      description: getField(i,"description"),
-      suggestion: getField(i,"suggestion"),
-      severity: getField(i,"severity"),
-      wcagLevel: getField(i,"wcagLevel"),
-      wcagSC: getField(i,"wcagSC")
+    issues = data.map(i => ({
+      type: i.type || i.Type || "",
+      issue: i.issue || i.Issue || "",
+      description: i.description || i.Description || "",
+      suggestion: i.suggestion || i.Suggestion || "",
+      severity: i.severity || i.Severity || "",
+      wcagLevel: i.wcagLevel || i.Level || "",
+      wcagSC: i.wcagSC || i.SC || ""
     }));
 
-    filtered=issues;
+    filtered = issues;
 
     updateDashboard();
     render();
 
-    if(filtered.length>0){
+    if(filtered.length > 0){
       showPreview(filtered[0]);
     }
 
+    showVersion();
+
+  })
+  .catch(()=>{
+    previewPanel.innerHTML = "<h3 style='color:red;'>Error loading data</h3>";
   });
 };
 
-/* ✅ FIXED PREVIEW */
-function showPreview(i){
+/* ✅ DASHBOARD */
+function updateDashboard(){
 
-  let parts=(i.description||"").split("Code Snippet:");
-
-  previewPanel.innerHTML=`
-    <h3>${i.issue}</h3>
-
-    <p><b>Type:</b> ${i.type}</p>
-    <p><b>Severity:</b> ${i.severity}</p>
-    <p><b>WCAG:</b> ${i.wcagLevel} | ${i.wcagSC}</p>
-
-    <p><b>Description:</b></p>
-    <p>${(parts[0]||"").replace(/\n/g,"<br>")}</p>
-
-    <p><b>Code Snippet:</b></p>
-    <div class="code-block">${escapeHTML(parts[1]||"")}</div>
-
-    <p><b>Suggestion:</b></p>
-    <p>${i.suggestion}</p>
-  `;
+  totalBox.innerText="Total: "+issues.length;
+  highBox.innerText="High: "+issues.filter(i=>i.severity==="High").length;
+  mediumBox.innerText="Medium: "+issues.filter(i=>i.severity==="Medium").length;
+  lowBox.innerText="Low: "+issues.filter(i=>i.severity==="Low").length;
 }
 
-/* ✅ FIXED SEARCH */
+/* ✅ SEARCH */
 searchBox.addEventListener("input",function(){
 
-  let q=this.value.toLowerCase();
+  let q = this.value.toLowerCase();
 
-  filtered=issues.filter(i =>
-    (i.issue||"").toLowerCase().includes(q) ||
-    (i.description||"").toLowerCase().includes(q) ||
-    (i.suggestion||"").toLowerCase().includes(q)
+  filtered = issues.filter(i =>
+    safe(i.issue).toLowerCase().includes(q) ||
+    safe(i.description).toLowerCase().includes(q) ||
+    safe(i.suggestion).toLowerCase().includes(q)
   );
 
   render();
+  showSuggestions(q);
 
-  if(filtered.length>0){
+  if(filtered.length > 0){
     showPreview(filtered[0]);
+  } else {
+    previewPanel.innerHTML = "<h3>No results</h3>";
   }
 });
 
-/* ✅ FIXED LIST */
+/* ✅ SUGGESTIONS */
+function showSuggestions(q){
+
+  if(!q){
+    suggestions.style.display="none";
+    return;
+  }
+
+  let matches = issues.filter(i =>
+    safe(i.issue).toLowerCase().includes(q)
+  );
+
+  suggestions.innerHTML="";
+
+  matches.forEach(i=>{
+    let div=document.createElement("div");
+    div.className="suggestion-item";
+    div.innerText=i.issue;
+
+    div.onclick=function(){
+      searchBox.value=i.issue;
+      suggestions.style.display="none";
+
+      filtered=[i];
+      render();
+      showPreview(i);
+    };
+
+    suggestions.appendChild(div);
+  });
+
+  suggestions.style.display="block";
+}
+
+/* ✅ LIST */
 function render(){
 
   resultList.innerHTML="";
@@ -103,11 +303,64 @@ function render(){
   });
 }
 
+function severityBadge(s){
+  if(s==="High") return `<span class="badge badge-high">HIGH</span>`;
+  if(s==="Medium") return `<span class="badge badge-medium">MEDIUM</span>`;
+  if(s==="Low") return `<span class="badge badge-low">LOW</span>`;
+  return "";
+}
+
+/* ✅ PREVIEW */
+function showPreview(i){
+
+  let parts = safe(i.description).split("Code Snippet:");
+
+  previewPanel.innerHTML=`
+    <h3>${i.issue}</h3>
+
+    <p><b>Type:</b> ${i.type}</p>
+    <p><b>Severity:</b> ${i.severity}</p>
+    <p><b>WCAG:</b> ${i.wcagLevel} | ${i.wcagSC}</p>
+
+    <p><b>Description:</b></p>
+    <p>${parts[0].replace(/\n/g,"<br>")}</p>
+
+    <p><b>Code Snippet:</b></p>
+    <div class="code-block">${escapeHTML(parts[1]||"")}</div>
+
+    <p><b>Suggestion:</b></p>
+    <p>${safe(i.suggestion)}</p>
+  `;
+}
+
 /* ✅ SAFE HTML */
 function escapeHTML(t){
-  return (t||"")
+  return safe(t)
     .replace(/</g,"&lt;")
     .replace(/>/g,"&gt;");
 }
 
+/* ✅ EXPORT */
+function generateReport(){
+
+  let rows=[["Type","Issue","Description","Suggestion","Severity","Level","SC"]];
+
+  issues.forEach(i=>{
+    rows.push([
+      i.type,i.issue,i.description,i.suggestion,
+      i.severity,i.wcagLevel,i.wcagSC
+    ]);
+  });
+
+  let ws = XLSX.utils.aoa_to_sheet(rows);
+  let wb = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(wb,ws,"Report");
+
+  XLSX.writeFile(wb,"Accessibility_Report.xlsx");
+}
+
 </script>
+
+</body>
+</html>
