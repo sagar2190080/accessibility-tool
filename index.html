@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
-body { font-family: Arial; margin:0; background:#f4f6f9; }
+body { font-family: Arial; margin:0; background:#f4f6f9;}
 
 header {
   background:#1f3c88;
@@ -17,7 +17,7 @@ header {
   justify-content:space-between;
 }
 
-/* DASHBOARD */
+/* Dashboard */
 .dashboard {
   display:flex;
   gap:10px;
@@ -28,20 +28,20 @@ header {
   flex:1;
   padding:10px;
   border-radius:6px;
-  color:white;
   text-align:center;
+  color:white;
 }
 .total { background:#007bff; }
 .high { background:#dc3545; }
 .medium { background:#ffc107; color:black; }
 .low { background:#28a745; }
 
-/* LAYOUT */
+/* Layout */
 .wrapper { display:flex; height:85vh; }
 .left { width:40%; background:white; padding:10px; overflow:auto; }
 .right { width:60%; padding:20px; }
 
-/* SEARCH */
+/* Search */
 .search-container { position:relative; }
 
 #suggestions {
@@ -49,10 +49,9 @@ header {
   width:100%;
   background:white;
   border:1px solid #ccc;
+  display:none;
   max-height:200px;
   overflow:auto;
-  display:none;
-  z-index:100;
 }
 
 .suggestion-item {
@@ -61,7 +60,7 @@ header {
 }
 .suggestion-item:hover { background:#eef2ff; }
 
-/* LIST */
+/* List */
 .card {
   padding:10px;
   border-bottom:1px solid #eee;
@@ -69,17 +68,11 @@ header {
 }
 .card:hover { background:#eef2ff; }
 
-/* CODE */
+/* Code */
 .code-block {
   background:#f4f4f4;
   padding:10px;
   font-family:monospace;
-}
-
-/* LOADER */
-.loader {
-  text-align:center;
-  font-size:18px;
 }
 
 </style>
@@ -93,10 +86,10 @@ header {
 </header>
 
 <div class="dashboard">
-  <div class="stat total" id="totalBox">Total: 0</div>
-  <div class="stat high" id="highBox">High: 0</div>
-  <div class="stat medium" id="mediumBox">Medium: 0</div>
-  <div class="stat low" id="lowBox">Low: 0</div>
+  <div id="totalBox" class="stat total">Total: 0</div>
+  <div id="highBox" class="stat high">High: 0</div>
+  <div id="mediumBox" class="stat medium">Medium: 0</div>
+  <div id="lowBox" class="stat low">Low: 0</div>
 </div>
 
 <div class="wrapper">
@@ -113,7 +106,7 @@ header {
 </div>
 
 <div class="right" id="previewPanel">
-<div class="loader">Loading data...</div>
+<h3>Loading...</h3>
 </div>
 
 </div>
@@ -123,79 +116,76 @@ header {
 let issues = [];
 let filtered = [];
 
-/* ✅ SAFE */
-function safe(v){ return (v || "").toString(); }
+/* SAFE */
+function safe(v){
+  return (v || "").toString();
+}
 
-/* ✅ LOAD DATA */
+/* LOAD DATA */
 window.onload = function(){
-  loadData();
+  fetch("./repository.json")
+  .then(res=>{
+    if(!res.ok) throw new Error("File not found");
+    return res.json();
+  })
+  .then(data=>{
+    issues = Array.isArray(data) ? data : [];
+    filtered = issues;
+
+    updateDashboard();
+    render();
+
+    if(filtered.length){
+      showPreview(filtered[0]);
+    }
+  })
+  .catch(()=>{
+    previewPanel.innerHTML="<h3 style='color:red;'>Error loading data</h3>";
+  });
 };
 
-function loadData(){
-
-  fetch("./repository.json")
-    .then(r=>{
-      if(!r.ok) throw new Error("File not found");
-      return r.json();
-    })
-    .then(data=>{
-
-      issues = Array.isArray(data) ? data : [];
-      filtered = issues;
-
-      updateDashboard();
-      render();
-
-      if(filtered.length > 0){
-        showPreview(filtered[0]);
-      } else {
-        previewPanel.innerHTML = "<h3>No data available</h3>";
-      }
-
-    })
-    .catch(err=>{
-      console.error(err);
-
-      previewPanel.innerHTML = `
-        <div style="color:red;">
-          <h3>Error loading data</h3>
-          <button onclick="loadData()">Retry</button>
-        </div>
-      `;
-    });
-}
-
-/* ✅ DASHBOARD */
+/* DASHBOARD */
 function updateDashboard(){
-
-  totalBox.innerText="Total: " + issues.length;
-  highBox.innerText="High: " + issues.filter(i=>i.severity==="High").length;
-  mediumBox.innerText="Medium: " + issues.filter(i=>i.severity==="Medium").length;
-  lowBox.innerText="Low: " + issues.filter(i=>i.severity==="Low").length;
+  totalBox.innerText = "Total: " + issues.length;
+  highBox.innerText = "High: " + issues.filter(i=>i.severity==="High").length;
+  mediumBox.innerText = "Medium: " + issues.filter(i=>i.severity==="Medium").length;
+  lowBox.innerText = "Low: " + issues.filter(i=>i.severity==="Low").length;
 }
 
-/* ✅ SEARCH */
-searchBox.addEventListener("input", function(){
+/* ✅ SMART SEARCH (MAIN FIX) */
+document.getElementById("searchBox").addEventListener("input", function(){
 
-  let q = this.value.toLowerCase();
+  let q = this.value.toLowerCase().trim();
 
-  filtered = issues.filter(i =>
-    safe(i.issue).toLowerCase().includes(q) ||
-    safe(i.description).toLowerCase().includes(q) ||
-    safe(i.suggestion).toLowerCase().includes(q)
-  );
+  if(!q){
+    filtered = issues;
+  } else {
+
+    filtered = issues.filter(i => {
+      let text = (
+        safe(i.issue) + " " +
+        safe(i.description) + " " +
+        safe(i.suggestion)
+      ).toLowerCase();
+
+      return text.includes(q);
+    });
+
+    /* ✅ fallback (never empty UI) */
+    if(filtered.length === 0){
+      filtered = issues;
+    }
+  }
 
   render();
   showSuggestions(q);
 
-  if(filtered.length > 0){
+  if(filtered.length){
     showPreview(filtered[0]);
-  } else {
-    previewPanel.innerHTML="<h3>No results</h3>";
   }
 });
 
-/* ✅ SUGGESTIONS */
+/* ✅ SUGGESTIONS BACK */
 function showSuggestions(q){
 
   let box = document.getElementById("suggestions");
@@ -219,6 +209,7 @@ function showSuggestions(q){
     div.onclick=function(){
       searchBox.value=i.issue;
       box.style.display="none";
+
       filtered=[i];
       render();
       showPreview(i);
@@ -230,28 +221,31 @@ function showSuggestions(q){
   box.style.display = matches.length ? "block" : "none";
 }
 
-/* ✅ LIST */
+/* LIST */
 function render(){
 
-  let list = document.getElementById("resultList");
+  let list=document.getElementById("resultList");
   list.innerHTML="";
 
   filtered.forEach(i=>{
     let div=document.createElement("div");
     div.className="card";
+
     div.innerHTML="<b>"+safe(i.issue)+"</b>";
+
     div.onclick=()=>showPreview(i);
     list.appendChild(div);
   });
 }
 
-/* ✅ PREVIEW */
+/* PREVIEW */
 function showPreview(i){
 
   let parts = safe(i.description).split("Code Snippet:");
 
   previewPanel.innerHTML=`
     <h3>${i.issue}</h3>
+
     <p><b>Type:</b> ${i.type}</p>
     <p><b>Severity:</b> ${i.severity}</p>
     <p><b>WCAG:</b> ${i.wcagLevel} | ${i.wcagSC}</p>
@@ -260,27 +254,32 @@ function showPreview(i){
     <p>${parts[0]}</p>
 
     <p><b>Code Snippet:</b></p>
-    <div class="code-block">${escapeHTML(parts[1]||"")}</div>
+    <div class="code-block">${escapeHTML(parts[1] || "")}</div>
 
     <p><b>Suggestion:</b></p>
     <p>${safe(i.suggestion)}</p>
   `;
 }
 
-/* ✅ SAFE HTML */
+/* SAFE HTML */
 function escapeHTML(t){
-  return safe(t).replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return safe(t)
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
 }
 
-/* ✅ EXPORT */
+/* EXPORT */
 function generateReport(){
 
   let rows=[["Issue","Severity"]];
 
-  issues.forEach(i=>rows.push([i.issue,i.severity]));
+  issues.forEach(i=>{
+    rows.push([i.issue,i.severity]);
+  });
 
   let ws=XLSX.utils.aoa_to_sheet(rows);
   let wb=XLSX.utils.book_new();
+
   XLSX.utils.book_append_sheet(wb,ws,"Report");
 
   XLSX.writeFile(wb,"Accessibility_Report.xlsx");
