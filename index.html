@@ -8,40 +8,20 @@
 
 <style>
 body { font-family: Arial; margin:0; background:#f4f6f9;}
+header { background:#1f3c88; color:white; padding:15px; display:flex; justify-content:space-between; }
 
-header {
-  background:#1f3c88;
-  color:white;
-  padding:15px;
-  display:flex;
-  justify-content:space-between;
-}
-
-.dashboard {
-  display:flex;
-  gap:10px;
-  padding:10px;
-  background:white;
-}
-.stat {
-  flex:1;
-  padding:10px;
-  border-radius:6px;
-  color:white;
-  text-align:center;
-}
+.dashboard { display:flex; gap:10px; padding:10px; background:white; }
+.stat { flex:1; padding:10px; border-radius:6px; color:white; text-align:center; }
 .total { background:#007bff; }
 .high { background:#dc3545; }
 .medium { background:#ffc107; color:black; }
 .low { background:#28a745; }
 
 .wrapper { display:flex; height:85vh; }
-
 .left { width:40%; background:white; padding:10px; overflow:auto; }
 .right { width:60%; padding:20px; }
 
 .search-container { position:relative; }
-
 #suggestions {
   position:absolute;
   width:100%;
@@ -52,55 +32,10 @@ header {
   display:none;
 }
 
-.suggestion-item {
-  padding:8px;
-  cursor:pointer;
-}
-.suggestion-item:hover { background:#eef2ff; }
-
-.card {
-  padding:10px;
-  border-bottom:1px solid #eee;
-  cursor:pointer;
-}
+.card { padding:10px; border-bottom:1px solid #eee; cursor:pointer; }
 .card:hover { background:#eef2ff; }
 
-.badge {
-  display:inline-block;
-  padding:3px 6px;
-  border-radius:10px;
-  font-size:11px;
-  color:white;
-}
-.badge-type { background:#6c757d; }
-.badge-high { background:#dc3545; }
-.badge-medium { background:#ffc107; color:black; }
-.badge-low { background:#28a745; }
-
-.code-block {
-  background:#f4f4f4;
-  padding:10px;
-  font-family:monospace;
-  white-space:pre-wrap;
-}
-
-/* Version Panel */
-.version-panel {
-  position:fixed;
-  top:60px;
-  right:10px;
-  width:300px;
-  background:white;
-  border:1px solid #ccc;
-  padding:10px;
-  display:none;
-  max-height:300px;
-  overflow:auto;
-}
-button {
-  margin-left:5px;
-  padding:5px 10px;
-}
+.code-block { background:#f4f4f4; padding:10px; font-family:monospace; }
 
 </style>
 </head>
@@ -109,20 +44,15 @@ button {
 
 <header>
   <div>Accessibility Tool 🚀</div>
-  <div>
-    <button onclick="toggleVersion()">Version</button>
-    <button onclick="generateReport()">Export Excel</button>
-  </div>
+  <button onclick="generateReport()">Export Excel</button>
 </header>
 
 <div class="dashboard">
-  <div class="stat total" id="totalBox"></div>
-  <div class="stat high" id="highBox"></div>
-  <div class="stat medium" id="mediumBox"></div>
-  <div class="stat low" id="lowBox"></div>
+  <div class="stat total" id="totalBox">Total: 0</div>
+  <div class="stat high" id="highBox">High: 0</div>
+  <div class="stat medium" id="mediumBox">Medium: 0</div>
+  <div class="stat low" id="lowBox">Low: 0</div>
 </div>
-
-<div id="versionPanel" class="version-panel"></div>
 
 <div class="wrapper">
 
@@ -138,84 +68,61 @@ button {
 </div>
 
 <div class="right" id="previewPanel">
-<h3>Loading data...</h3>
+<h3>Loading...</h3>
 </div>
 
 </div>
 
 <script>
 
-/* ✅ AUTO VERSION */
-const FEATURES = [
-  "GitHub data loading",
-  "Search + filter",
-  "Auto suggestion dropdown",
-  "Auto preview first result",
-  "Code snippet rendering safe",
-  "Dashboard counts",
-  "Excel export"
-];
+let issues=[];
+let filtered=[];
 
-function showVersion(){
-  let version = "v1." + FEATURES.length;
-
-  let html = `<b>${version}</b><ul>`;
-  FEATURES.forEach(f => html += `<li>${f}</li>`);
-  html += "</ul>";
-
-  versionPanel.innerHTML = html;
-}
-
-function toggleVersion(){
-  versionPanel.style.display =
-    (versionPanel.style.display==="block")?"none":"block";
-}
-
-/* ✅ SAFE ACCESS */
+/* ✅ SAFE TEXT */
 function safe(v){
   return (v || "").toString();
 }
 
-/* ✅ LOAD DATA */
-let issues=[], filtered=[];
-
+/* ✅ SAFE LOAD */
 window.onload=function(){
+
+  loadData();
+};
+
+function loadData(){
 
   fetch("./repository.json")
   .then(res=>{
     if(!res.ok){
-      throw new Error("repository.json not found");
+      throw new Error("File not found");
     }
     return res.json();
   })
   .then(data=>{
 
-    issues = data.map(i => ({
-      type: i.type || i.Type || "",
-      issue: i.issue || i.Issue || "",
-      description: i.description || i.Description || "",
-      suggestion: i.suggestion || i.Suggestion || "",
-      severity: i.severity || i.Severity || "",
-      wcagLevel: i.wcagLevel || i.Level || "",
-      wcagSC: i.wcagSC || i.SC || ""
-    }));
-
+    issues = Array.isArray(data) ? data : [];
     filtered = issues;
 
     updateDashboard();
     render();
 
-    if(filtered.length > 0){
+    if(filtered.length>0){
       showPreview(filtered[0]);
+    } else {
+      previewPanel.innerHTML="<h3>No data available</h3>";
     }
 
-    showVersion();
-
   })
-  .catch(()=>{
-    previewPanel.innerHTML = "<h3 style='color:red;'>Error loading data</h3>";
+  .catch(err=>{
+
+    console.error("ERROR:", err);
+
+    previewPanel.innerHTML = `
+      <h3 style="color:red;">Error loading data</h3>
+      <p>Check repository.json</p>
+    `;
   });
-};
+}
 
 /* ✅ DASHBOARD */
 function updateDashboard(){
@@ -227,9 +134,9 @@ function updateDashboard(){
 }
 
 /* ✅ SEARCH */
-searchBox.addEventListener("input",function(){
+document.getElementById("searchBox").addEventListener("input",function(){
 
-  let q = this.value.toLowerCase();
+  let q=this.value.toLowerCase();
 
   filtered = issues.filter(i =>
     safe(i.issue).toLowerCase().includes(q) ||
@@ -238,76 +145,31 @@ searchBox.addEventListener("input",function(){
   );
 
   render();
-  showSuggestions(q);
 
-  if(filtered.length > 0){
+  if(filtered.length>0){
     showPreview(filtered[0]);
   } else {
-    previewPanel.innerHTML = "<h3>No results</h3>";
+    previewPanel.innerHTML="<h3>No results</h3>";
   }
 });
-
-/* ✅ SUGGESTIONS */
-function showSuggestions(q){
-
-  if(!q){
-    suggestions.style.display="none";
-    return;
-  }
-
-  let matches = issues.filter(i =>
-    safe(i.issue).toLowerCase().includes(q)
-  );
-
-  suggestions.innerHTML="";
-
-  matches.forEach(i=>{
-    let div=document.createElement("div");
-    div.className="suggestion-item";
-    div.innerText=i.issue;
-
-    div.onclick=function(){
-      searchBox.value=i.issue;
-      suggestions.style.display="none";
-
-      filtered=[i];
-      render();
-      showPreview(i);
-    };
-
-    suggestions.appendChild(div);
-  });
-
-  suggestions.style.display="block";
-}
 
 /* ✅ LIST */
 function render(){
 
-  resultList.innerHTML="";
+  let list=document.getElementById("resultList");
+  list.innerHTML="";
 
   filtered.forEach(i=>{
 
     let div=document.createElement("div");
     div.className="card";
 
-    div.innerHTML=`
-      <b>${i.issue}</b><br>
-      <span class="badge badge-type">${i.type}</span>
-      ${severityBadge(i.severity)}
-    `;
+    div.innerHTML="<b>"+safe(i.issue)+"</b>";
 
     div.onclick=()=>showPreview(i);
 
-    resultList.appendChild(div);
+    list.appendChild(div);
   });
-}
-
-function severityBadge(s){
-  if(s==="High") return `<span class="badge badge-high">HIGH</span>`;
-  if(s==="Medium") return `<span class="badge badge-medium">MEDIUM</span>`;
-  if(s==="Low") return `<span class="badge badge-low">LOW</span>`;
-  return "";
 }
 
 /* ✅ PREVIEW */
@@ -316,14 +178,14 @@ function showPreview(i){
   let parts = safe(i.description).split("Code Snippet:");
 
   previewPanel.innerHTML=`
-    <h3>${i.issue}</h3>
+    <h3>${safe(i.issue)}</h3>
 
-    <p><b>Type:</b> ${i.type}</p>
-    <p><b>Severity:</b> ${i.severity}</p>
-    <p><b>WCAG:</b> ${i.wcagLevel} | ${i.wcagSC}</p>
+    <p><b>Type:</b> ${safe(i.type)}</p>
+    <p><b>Severity:</b> ${safe(i.severity)}</p>
+    <p><b>WCAG:</b> ${safe(i.wcagLevel)} | ${safe(i.wcagSC)}</p>
 
     <p><b>Description:</b></p>
-    <p>${parts[0].replace(/\n/g,"<br>")}</p>
+    <p>${parts[0]}</p>
 
     <p><b>Code Snippet:</b></p>
     <div class="code-block">${escapeHTML(parts[1]||"")}</div>
@@ -343,21 +205,17 @@ function escapeHTML(t){
 /* ✅ EXPORT */
 function generateReport(){
 
-  let rows=[["Type","Issue","Description","Suggestion","Severity","Level","SC"]];
+  let rows=[["Issue","Severity"]];
 
   issues.forEach(i=>{
-    rows.push([
-      i.type,i.issue,i.description,i.suggestion,
-      i.severity,i.wcagLevel,i.wcagSC
-    ]);
+    rows.push([i.issue,i.severity]);
   });
 
-  let ws = XLSX.utils.aoa_to_sheet(rows);
-  let wb = XLSX.utils.book_new();
+  let ws=XLSX.utils.aoa_to_sheet(rows);
+  let wb=XLSX.utils.book_new();
 
   XLSX.utils.book_append_sheet(wb,ws,"Report");
-
-  XLSX.writeFile(wb,"Accessibility_Report.xlsx");
+  XLSX.writeFile(wb,"Report.xlsx");
 }
 
 </script>
