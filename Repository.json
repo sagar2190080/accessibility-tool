@@ -1,12 +1,20 @@
 [
   {
     "type": "ARIA",
-    "issue": "ARIA role=\"menu\" defined inappropriately",
-    "description": "The role tab is defined incorrectly.\n\nCode Snippet:\n\n<a href='#'>Example</a>",
-    "rationale": "Screen readers misinterpret the role.",
-    "suggestion": "Remove incorrect roles and use proper ARIA.",
+    "issue": "ARIA Role and state defined inappropriately",
+    "description": "ARIA roles should be used properly.\nCode Snippet:\n<div role='button'></div>",
+    "suggestion": "Use correct role attributes or native elements",
     "severity": "High",
     "wcagLevel": "A",
-    "wcagSC": "2.1.1"
+    "wcagSC": "4.1.2"
+  },
+  {
+    "type": "Color",
+    "issue": "Insufficient color contrast",
+    "description": "Text contrast is too low.",
+    "suggestion": "Ensure contrast ratio of 4.5:1",
+    "severity": "High",
+    "wcagLevel": "AA",
+    "wcagSC": "1.4.3"
   }
 ]
