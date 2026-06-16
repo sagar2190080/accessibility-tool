@@ -8,7 +8,6 @@
 
 <style>
 body { font-family: Arial; margin:0; background:#f4f6f9;}
-
 header {
   background:#1f3c88;
   color:white;
@@ -16,19 +15,17 @@ header {
   display:flex;
   justify-content:space-between;
 }
-
 .dashboard {
   display:flex;
   gap:10px;
   padding:10px;
-  background:white;
 }
 .stat {
   flex:1;
   padding:10px;
-  border-radius:6px;
   color:white;
   text-align:center;
+  border-radius:5px;
 }
 .total { background:#007bff; }
 .high { background:#dc3545; }
@@ -36,33 +33,18 @@ header {
 .low { background:#28a745; }
 
 .wrapper { display:flex; height:85vh; }
-.left { width:40%; background:white; padding:10px; overflow:auto; }
+.left { width:40%; overflow:auto; padding:10px; background:#fff; }
 .right { width:60%; padding:20px; }
-
-.search-container { position:relative; }
-
-#suggestions {
-  position:absolute;
-  width:100%;
-  background:white;
-  border:1px solid #ccc;
-  max-height:200px;
-  overflow:auto;
-  display:none;
-}
 
 .card {
   padding:10px;
-  border-bottom:1px solid #eee;
+  border-bottom:1px solid #ddd;
   cursor:pointer;
 }
-.card:hover { background:#eef2ff; }
+.card:hover { background:#eef; }
 
-.code-block {
-  background:#f4f4f4;
-  padding:10px;
-  font-family:monospace;
-}
+.code { background:#eee; padding:10px; }
+
 </style>
 </head>
 
@@ -70,7 +52,6 @@ header {
 
 <header>
   <div>Accessibility Tool 🚀</div>
-  <button onclick="generateReport()">Export Excel</button>
 </header>
 
 <div class="dashboard">
@@ -83,57 +64,61 @@ header {
 <div class="wrapper">
 
 <div class="left">
-
-<div class="search-container">
-  <input id="searchBox" placeholder="Search..." style="width:100%;">
-  <div id="suggestions"></div>
-</div>
-
+<input id="searchBox" placeholder="Search..." style="width:100%;margin-bottom:10px;">
 <div id="resultList"></div>
-
 </div>
 
-<div class="right" id="previewPanel">
-<h3>Loading...</h3>
-</div>
+<div class="right" id="previewPanel"></div>
 
 </div>
 
 <script>
 
-let issues=[], filtered=[];
+let issues = [];
+let filtered = [];
 
-/* ✅ UNIVERSAL MAPPING (FINAL FIX) */
-function get(obj, keys){
-  for(let k of keys){
-    if(obj[k] !== undefined) return obj[k];
+/* ✅ SMART FIELD FINDER (REAL FIX) */
+function findField(obj, keywords){
+
+  let keys = Object.keys(obj);
+
+  for(let key of keys){
+
+    let lower = key.toLowerCase();
+
+    for(let k of keywords){
+      if(lower.includes(k)){
+        return obj[key];
+      }
+    }
+
   }
+
   return "";
 }
 
+/* ✅ MAP DATA CORRECTLY */
 function mapData(obj){
 
   return {
-    issue: get(obj, ["issue","Issue","Issue Name"]),
-    type: get(obj, ["type","Type","Type Name"]),
-    description: get(obj, ["description","Description"]),
-    suggestion: get(obj, ["suggestion","Suggestion","Recommendation"]),
-    severity: get(obj, ["severity","Severity"]),
-    wcagLevel: get(obj, ["wcagLevel","WCAG Level","Level"]),
-    wcagSC: get(obj, ["wcagSC","SC","Success Criteria"])
+    issue: findField(obj, ["issue"]),
+    type: findField(obj, ["type"]),
+    description: findField(obj, ["description"]),
+    suggestion: findField(obj, ["suggestion","recommend"]),
+    severity: findField(obj, ["severity"]),
+    wcagLevel: findField(obj, ["level","wcag"]),
+    wcagSC: findField(obj, ["sc","criteria"])
   };
 }
 
-function safe(v){ return (v||"").toString(); }
-
-/* LOAD */
+/* ✅ LOAD */
 window.onload=function(){
 
   fetch("./repository.json")
   .then(r=>r.json())
   .then(data=>{
 
-    issues = data.map(mapData); // ✅ CORE FIX
+    issues = data.map(mapData);  // ✅ CORE FIX HERE
     filtered = issues;
 
     updateDashboard();
@@ -148,6 +133,7 @@ window.onload=function(){
 
 /* DASHBOARD */
 function updateDashboard(){
+
   totalBox.innerText="Total: "+issues.length;
   highBox.innerText="High: "+issues.filter(i=>i.severity==="High").length;
   mediumBox.innerText="Medium: "+issues.filter(i=>i.severity==="Medium").length;
@@ -159,15 +145,13 @@ searchBox.addEventListener("input",function(){
 
   let q=this.value.toLowerCase();
 
-  filtered=issues.filter(i=>{
-    let text = (
-      safe(i.issue)+" "+
-      safe(i.description)+" "+
-      safe(i.suggestion)
-    ).toLowerCase();
+  filtered = issues.filter(i =>
 
-    return text.includes(q);
-  });
+    (i.issue+" "+i.description+" "+i.suggestion)
+    .toLowerCase()
+    .includes(q)
+
+  );
 
   render();
 
@@ -187,8 +171,7 @@ function render(){
 
     let div=document.createElement("div");
     div.className="card";
-
-    div.innerHTML="<b>"+safe(i.issue || "No Title")+"</b>";
+    div.innerHTML="<b>"+(i.issue || "No title")+"</b>";
 
     div.onclick=()=>showPreview(i);
 
@@ -199,41 +182,19 @@ function render(){
 /* PREVIEW */
 function showPreview(i){
 
-  if(!i.issue){
-    previewPanel.innerHTML="<h3>No valid data mapping</h3>";
-    return;
-  }
-
   previewPanel.innerHTML=`
-    <h3>${safe(i.issue)}</h3>
+    <h2>${i.issue}</h2>
 
-    <p><b>Type:</b> ${safe(i.type)}</p>
-    <p><b>Severity:</b> ${safe(i.severity)}</p>
-    <p><b>WCAG:</b> ${safe(i.wcagLevel)} | ${safe(i.wcagSC)}</p>
+    <p><b>Type:</b> ${i.type}</p>
+    <p><b>Severity:</b> ${i.severity}</p>
+    <p><b>WCAG:</b> ${i.wcagLevel} | ${i.wcagSC}</p>
 
     <p><b>Description:</b></p>
-    <p>${safe(i.description)}</p>
+    <p>${i.description}</p>
 
     <p><b>Suggestion:</b></p>
-    <p>${safe(i.suggestion)}</p>
+    <p>${i.suggestion}</p>
   `;
-}
-
-/* EXPORT */
-function generateReport(){
-
-  let rows=[["Issue","Severity"]];
-
-  issues.forEach(i=>{
-    rows.push([i.issue,i.severity]);
-  });
-
-  let ws=XLSX.utils.aoa_to_sheet(rows);
-  let wb=XLSX.utils.book_new();
-
-  XLSX.utils.book_append_sheet(wb,ws,"Report");
-
-  XLSX.writeFile(wb,"Accessibility_Report.xlsx");
 }
 
 </script>
