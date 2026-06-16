@@ -5,19 +5,14 @@
 <title>Accessibility Tool</title>
 
 <style>
-body {
-  font-family: Arial;
-  margin:0;
-}
+body { font-family: Arial; margin:0; }
 
-/* HEADER */
 header {
   background:#1f3c88;
   color:white;
   padding:15px;
 }
 
-/* LAYOUT */
 .wrapper {
   display:flex;
   height:90vh;
@@ -34,16 +29,16 @@ header {
 .right {
   width:60%;
   padding:20px;
-  overflow:auto; /* ✅ FIX overlap */
+  overflow:auto;
 }
 
-/* SEARCH */
+/* search */
 input {
   width:100%;
   padding:8px;
 }
 
-/* SUGGESTIONS */
+/* suggestions */
 #suggestions {
   position:absolute;
   background:white;
@@ -63,7 +58,7 @@ input {
   background:#e6f0ff;
 }
 
-/* LIST */
+/* list */
 .card {
   padding:10px;
   border-bottom:1px solid #ccc;
@@ -72,9 +67,6 @@ input {
 .card:hover {
   background:#e6f0ff;
 }
-
-/* TEXT */
-h2,h3 { margin-top:10px; }
 
 </style>
 </head>
@@ -93,7 +85,6 @@ h2,h3 { margin-top:10px; }
 <div id="suggestions"></div>
 
 <br>
-
 <div id="resultList"></div>
 
 </div>
@@ -109,7 +100,7 @@ h2,h3 { margin-top:10px; }
 let issues = [];
 let filtered = [];
 
-/* ✅ SAFE VALUE FUNCTION */
+/* ✅ SMART VALUE PICKER (FIX WCAG + ALL KEYS) */
 function getVal(obj, ...keys){
   for(let k of keys){
     if(obj[k]) return obj[k];
@@ -117,14 +108,13 @@ function getVal(obj, ...keys){
   return "-";
 }
 
-/* ✅ LOAD DATA */
+/* ✅ LOAD */
 window.onload = function(){
 
   let saved = localStorage.getItem("repoData");
 
   if(!saved){
-    document.getElementById("previewPanel").innerHTML =
-      "<h3>Please import Excel first</h3>";
+    previewPanel.innerHTML = "<h3>Please import Excel first</h3>";
     return;
   }
 
@@ -139,23 +129,22 @@ window.onload = function(){
   }
 };
 
-/* ✅ SEARCH + SUGGESTION */
+/* ✅ SEARCH */
 searchBox.addEventListener("input", function(){
 
   let q = this.value.toLowerCase().trim();
 
-  /* FILTER LIST */
   filtered = issues.filter(i =>
     JSON.stringify(i).toLowerCase().includes(q)
   );
 
   renderList();
 
-  /* AUTOSUGGEST */
+  /* ✅ FIX: use SAME filtered data for suggestions */
   showSuggestions(q);
 });
 
-/* ✅ AUTOSUGGEST FULL MATCH (NO LIMIT) */
+/* ✅ FIXED SUGGESTIONS (MATCH LEFT PANEL COUNT) */
 function showSuggestions(q){
 
   let box = document.getElementById("suggestions");
@@ -165,9 +154,7 @@ function showSuggestions(q){
     return;
   }
 
-  let matches = issues.filter(i =>
-    (i["Issue"] || i.issue || "").toLowerCase().includes(q)
-  );
+  let matches = filtered; // ✅ SAME AS LEFT PANEL
 
   box.innerHTML = "";
 
@@ -176,13 +163,13 @@ function showSuggestions(q){
     let div = document.createElement("div");
     div.className="suggestion-item";
 
-    let text = i["Issue"] || i.issue;
+    let text = i["Issue"] || i.issue || "No Title";
 
     div.innerText = text;
 
     div.onclick = function(){
 
-      document.getElementById("searchBox").value = text;
+      searchBox.value = text;
 
       box.style.display="none";
 
@@ -199,7 +186,7 @@ function showSuggestions(q){
   box.style.display = matches.length ? "block" : "none";
 }
 
-/* ✅ LIST RENDER */
+/* ✅ LIST */
 function renderList(){
 
   resultList.innerHTML = "";
@@ -208,27 +195,26 @@ function renderList(){
 
     let div = document.createElement("div");
 
-    div.className = "card";
+    div.className="card";
 
-    div.innerHTML = "<b>" + (i["Issue"] || i.issue || "No Title") + "</b>";
+    div.innerHTML = "<b>" + (i["Issue"] || i.issue || "No title") + "</b>";
 
     div.onclick = () => showDetails(i);
 
     resultList.appendChild(div);
   });
-
 }
 
-/* ✅ DETAILS PANEL */
+/* ✅ DETAILS */
 function showDetails(i){
 
   let issue = getVal(i,"Issue","issue");
   let type = getVal(i,"Type of Issue","type");
   let severity = getVal(i,"Severity","severity");
 
-  /* ✅ WCAG FIX */
-  let wcagLevel = getVal(i,"WCAG 2.0 Conformance Level","wcagLevel");
-  let wcagSC = getVal(i,"WCAG 2.0","wcagSC");
+  /* ✅ FIX WCAG */
+  let wcagLevel = getVal(i,"wcagLevel","WCAG 2.0 Conformance Level");
+  let wcagSC = getVal(i,"wcagSC","WCAG 2.0");
 
   let description =
     (getVal(i,"Issue Description","description") + " " +
@@ -236,7 +222,7 @@ function showDetails(i){
 
   let suggestion = getVal(i,"Suggestion","suggestion");
 
-  document.getElementById("previewPanel").innerHTML = `
+  previewPanel.innerHTML = `
     <h2>${issue}</h2>
 
     <p><b>Type:</b> ${type}</p>
