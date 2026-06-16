@@ -51,9 +51,6 @@ header {
   display:none;
 }
 
-.suggestion-item { padding:8px; cursor:pointer; }
-.suggestion-item:hover { background:#eef2ff; }
-
 .card {
   padding:10px;
   border-bottom:1px solid #eee;
@@ -106,30 +103,37 @@ header {
 
 let issues=[], filtered=[];
 
-/* ✅ UNIVERSAL FIELD MAPPER (KEY FIX) */
+/* ✅ UNIVERSAL MAPPING (FINAL FIX) */
+function get(obj, keys){
+  for(let k of keys){
+    if(obj[k] !== undefined) return obj[k];
+  }
+  return "";
+}
+
 function mapData(obj){
 
   return {
-    type: obj.type || obj.Type || "",
-    issue: obj.issue || obj.Issue || "",
-    description: obj.description || obj.Description || "",
-    suggestion: obj.suggestion || obj.Suggestion || "",
-    severity: obj.severity || obj.Severity || "",
-    wcagLevel: obj.wcagLevel || obj.Level || obj.WCAG || "",
-    wcagSC: obj.wcagSC || obj.SC || obj["Success Criteria"] || ""
+    issue: get(obj, ["issue","Issue","Issue Name"]),
+    type: get(obj, ["type","Type","Type Name"]),
+    description: get(obj, ["description","Description"]),
+    suggestion: get(obj, ["suggestion","Suggestion","Recommendation"]),
+    severity: get(obj, ["severity","Severity"]),
+    wcagLevel: get(obj, ["wcagLevel","WCAG Level","Level"]),
+    wcagSC: get(obj, ["wcagSC","SC","Success Criteria"])
   };
 }
 
 function safe(v){ return (v||"").toString(); }
 
-/* ✅ LOAD DATA */
+/* LOAD */
 window.onload=function(){
 
   fetch("./repository.json")
-  .then(res=>res.json())
+  .then(r=>r.json())
   .then(data=>{
 
-    issues = data.map(mapData); // ✅ FIX APPLIED HERE
+    issues = data.map(mapData); // ✅ CORE FIX
     filtered = issues;
 
     updateDashboard();
@@ -144,7 +148,6 @@ window.onload=function(){
 
 /* DASHBOARD */
 function updateDashboard(){
-
   totalBox.innerText="Total: "+issues.length;
   highBox.innerText="High: "+issues.filter(i=>i.severity==="High").length;
   mediumBox.innerText="Medium: "+issues.filter(i=>i.severity==="Medium").length;
@@ -157,7 +160,6 @@ searchBox.addEventListener("input",function(){
   let q=this.value.toLowerCase();
 
   filtered=issues.filter(i=>{
-
     let text = (
       safe(i.issue)+" "+
       safe(i.description)+" "+
@@ -168,7 +170,6 @@ searchBox.addEventListener("input",function(){
   });
 
   render();
-  showSuggestions(q);
 
   if(filtered.length){
     showPreview(filtered[0]);
@@ -176,41 +177,6 @@ searchBox.addEventListener("input",function(){
     previewPanel.innerHTML="<h3>No results</h3>";
   }
 });
-
-/* SUGGESTIONS */
-function showSuggestions(q){
-
-  if(!q){
-    suggestions.style.display="none";
-    return;
-  }
-
-  let matches=issues.filter(i=>
-    safe(i.issue).toLowerCase().includes(q)
-  ).slice(0,10);
-
-  suggestions.innerHTML="";
-
-  matches.forEach(i=>{
-
-    let div=document.createElement("div");
-    div.className="suggestion-item";
-    div.innerText=i.issue;
-
-    div.onclick=function(){
-      searchBox.value=i.issue;
-      suggestions.style.display="none";
-
-      filtered=[i];
-      render();
-      showPreview(i);
-    };
-
-    suggestions.appendChild(div);
-  });
-
-  suggestions.style.display="block";
-}
 
 /* LIST */
 function render(){
@@ -222,7 +188,7 @@ function render(){
     let div=document.createElement("div");
     div.className="card";
 
-    div.innerHTML="<b>"+safe(i.issue)+"</b>";
+    div.innerHTML="<b>"+safe(i.issue || "No Title")+"</b>";
 
     div.onclick=()=>showPreview(i);
 
@@ -233,20 +199,20 @@ function render(){
 /* PREVIEW */
 function showPreview(i){
 
-  let parts=safe(i.description).split("Code Snippet:");
+  if(!i.issue){
+    previewPanel.innerHTML="<h3>No valid data mapping</h3>";
+    return;
+  }
 
   previewPanel.innerHTML=`
-    <h3>${i.issue}</h3>
+    <h3>${safe(i.issue)}</h3>
 
-    <p><b>Type:</b> ${i.type}</p>
-    <p><b>Severity:</b> ${i.severity}</p>
-    <p><b>WCAG:</b> ${i.wcagLevel} | ${i.wcagSC}</p>
+    <p><b>Type:</b> ${safe(i.type)}</p>
+    <p><b>Severity:</b> ${safe(i.severity)}</p>
+    <p><b>WCAG:</b> ${safe(i.wcagLevel)} | ${safe(i.wcagSC)}</p>
 
     <p><b>Description:</b></p>
-    <p>${parts[0]}</p>
-
-    <p><b>Code Snippet:</b></p>
-    <div class="code-block">${parts[1]||""}</div>
+    <p>${safe(i.description)}</p>
 
     <p><b>Suggestion:</b></p>
     <p>${safe(i.suggestion)}</p>
