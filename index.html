@@ -2,7 +2,9 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Accessibility Issue Tool</title>
+<title>Accessibility Tool</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
 body { font-family: Arial; margin:0; background:#f4f6f9;}
@@ -15,39 +17,36 @@ header {
   justify-content:space-between;
 }
 
-/* VERSION PANEL */
-.version-box {
-  font-size:12px;
-  cursor:pointer;
-}
-
-.version-panel {
-  position:fixed;
-  right:10px;
-  top:60px;
-  background:white;
-  border:1px solid #ccc;
+.dashboard {
+  display:flex;
+  gap:10px;
   padding:10px;
-  width:300px;
-  max-height:300px;
-  overflow:auto;
-  display:none;
+  background:white;
 }
+.stat {
+  flex:1;
+  padding:10px;
+  border-radius:6px;
+  color:white;
+  text-align:center;
+}
+.total { background:#007bff; }
+.high { background:#dc3545; }
+.medium { background:#ffc107; color:black; }
+.low { background:#28a745; }
 
-/* Layout */
-.wrapper { display:flex; height:90vh; }
+.wrapper { display:flex; height:85vh; }
 
-.left { width:40%; background:white; padding:10px; }
+.left { width:40%; background:white; padding:10px; overflow:auto; }
 .right { width:60%; padding:20px; }
 
-/* suggestions */
 .search-container { position:relative; }
 
 #suggestions {
   position:absolute;
+  width:100%;
   background:white;
   border:1px solid #ccc;
-  width:95%;
   max-height:200px;
   overflow:auto;
   display:none;
@@ -64,16 +63,62 @@ header {
   border-bottom:1px solid #eee;
   cursor:pointer;
 }
+.card:hover { background:#eef2ff; }
 
+.badge {
+  display:inline-block;
+  padding:3px 6px;
+  border-radius:10px;
+  font-size:11px;
+  color:white;
+}
+.badge-type { background:#6c757d; }
+.badge-high { background:#dc3545; }
+.badge-medium { background:#ffc107; color:black; }
+.badge-low { background:#28a745; }
+
+.code-block {
+  background:#f4f4f4;
+  padding:10px;
+  font-family:monospace;
+  white-space:pre-wrap;
+}
+
+.version-panel {
+  position:fixed;
+  top:60px;
+  right:10px;
+  width:300px;
+  background:white;
+  border:1px solid #ccc;
+  padding:10px;
+  display:none;
+  max-height:300px;
+  overflow:auto;
+}
+button {
+  margin-left:5px;
+  padding:5px 10px;
+}
 </style>
 </head>
 
 <body>
 
 <header>
-  <div>Accessibility Issue Tool</div>
-  <div class="version-box" onclick="toggleVersion()" id="versionDisplay"></div>
+  <div>Accessibility Tool 🚀</div>
+  <div>
+    <button onclick="toggleVersion()">Version</button>
+    <button onclick="generateReport()">Export Excel</button>
+  </div>
 </header>
+
+<div class="dashboard">
+  <div class="stat total" id="totalBox"></div>
+  <div class="stat high" id="highBox"></div>
+  <div class="stat medium" id="mediumBox"></div>
+  <div class="stat low" id="lowBox"></div>
+</div>
 
 <div class="version-panel" id="versionPanel"></div>
 
@@ -82,7 +127,7 @@ header {
 <div class="left">
 
 <div class="search-container">
-  <input id="searchBox" placeholder="Search..." style="width:95%;">
+  <input id="searchBox" placeholder="Search..." style="width:100%;">
   <div id="suggestions"></div>
 </div>
 
@@ -91,95 +136,81 @@ header {
 </div>
 
 <div class="right" id="previewPanel">
-<h3>Select Issue</h3>
+<h3>Loading...</h3>
 </div>
 
 </div>
 
 <script>
 
-/* ✅ ✅ AUTO VERSION CONTROL CONFIG */
-const BASE_VERSION = "v1.csv"; // your base version (change rarely)
-
 const FEATURES = [
-  "Initial tool setup",
-  "Search functionality added",
-  "Auto preview first item",
-  "Badge UI implemented",
-  "Code snippet safe rendering",
-  "Dashboard metrics added",
-  "Excel export feature",
+  "GitHub data loading",
+  "Search + filter",
   "Auto suggestion dropdown",
-  "Multi-field search",
-  "Removed suggestion limit",
-  "Apply updates button",
-  "Version tracking system",
-  "Auto version generator",
-  "Improved suggestion accuracy"
+  "Auto preview first result",
+  "Code snippet rendering safe",
+  "Dashboard counts",
+  "Excel export with summary",
+  "Version viewer"
 ];
 
-/* ✅ GENERATE VERSION */
-function generateVersion(){
-
-  let versionNumber = FEATURES.length;
-
-  return "v1." + versionNumber + " (" + versionNumber + " features)";
-}
-
-/* ✅ DISPLAY VERSION */
 function showVersion(){
+  let version="v1."+FEATURES.length;
 
-  let version = generateVersion();
+  let html=`<b>${version}</b><ul>`;
+  FEATURES.forEach(f=>html+="<li>"+f+"</li>");
+  html+="</ul>";
 
-  document.getElementById("versionDisplay").innerText = version;
-
-  let html = "<b>" + version + "</b><br><br><b>Features:</b><ul>";
-
-  FEATURES.forEach(f=>{
-    html += "<li>" + f + "</li>";
-  });
-
-  html += "</ul>";
-
-  document.getElementById("versionPanel").innerHTML = html;
+  versionPanel.innerHTML=html;
 }
 
-/* ✅ TOGGLE PANEL */
 function toggleVersion(){
-
-  let p = document.getElementById("versionPanel");
-
-  p.style.display = (p.style.display==="none" || p.style.display==="") ? "block" : "none";
+  versionPanel.style.display =
+    (versionPanel.style.display==="block")?"none":"block";
 }
 
-/* DATA */
 let issues=[], filtered=[];
 
-/* LOAD */
 window.onload=function(){
 
-  let saved = localStorage.getItem("repoData");
-  if(!saved){ alert("Import first"); return; }
+  fetch("./repository.json")
+  .then(res=>res.json())
+  .then(data=>{
 
-  issues = JSON.parse(saved);
-  filtered = issues;
+    issues=data;
+    filtered=data;
 
-  render();
+    updateDashboard();
+    render();
 
-  if(filtered.length>0){
-    showPreview(filtered[0]);
-  }
+    if(filtered.length>0){
+      showPreview(filtered[0]);
+    }
 
-  showVersion(); // ✅ AUTO VERSION
+    showVersion();
+
+  })
+  .catch(()=>{
+    previewPanel.innerHTML="<h3>Error loading data</h3>";
+  });
 };
 
-/* SEARCH */
+function updateDashboard(){
+
+  totalBox.innerText="Total: "+issues.length;
+  highBox.innerText="High: "+issues.filter(i=>i.severity==="High").length;
+  mediumBox.innerText="Medium: "+issues.filter(i=>i.severity==="Medium").length;
+  lowBox.innerText="Low: "+issues.filter(i=>i.severity==="Low").length;
+}
+
 searchBox.addEventListener("input",function(){
 
   let q=this.value.toLowerCase();
 
-  filtered = issues.filter(i =>
-    (i.issue||"").toLowerCase().includes(q)
+  filtered=issues.filter(i =>
+       (i.issue||"").toLowerCase().includes(q)
+    || (i.description||"").toLowerCase().includes(q)
+    || (i.suggestion||"").toLowerCase().includes(q)
   );
 
   render();
@@ -187,10 +218,11 @@ searchBox.addEventListener("input",function(){
 
   if(filtered.length>0){
     showPreview(filtered[0]);
+  } else {
+    previewPanel.innerHTML="<h3>No results</h3>";
   }
 });
 
-/* SUGGESTIONS */
 function showSuggestions(q){
 
   if(!q){
@@ -198,7 +230,7 @@ function showSuggestions(q){
     return;
   }
 
-  let matches = issues.filter(i =>
+  let matches=issues.filter(i =>
     i.issue.toLowerCase().includes(q)
   );
 
@@ -211,8 +243,13 @@ function showSuggestions(q){
     div.innerText=i.issue;
 
     div.onclick=function(){
+
       searchBox.value=i.issue;
       suggestions.style.display="none";
+
+      filtered=[i];
+      render();
+      showPreview(i);
     };
 
     suggestions.appendChild(div);
@@ -221,7 +258,6 @@ function showSuggestions(q){
   suggestions.style.display="block";
 }
 
-/* LIST */
 function render(){
 
   resultList.innerHTML="";
@@ -230,7 +266,12 @@ function render(){
 
     let div=document.createElement("div");
     div.className="card";
-    div.innerHTML="<b>"+i.issue+"</b>";
+
+    div.innerHTML=`
+      <b>${i.issue}</b><br>
+      <span class="badge badge-type">${i.type}</span>
+      ${severityBadge(i.severity)}
+    `;
 
     div.onclick=()=>showPreview(i);
 
@@ -238,9 +279,58 @@ function render(){
   });
 }
 
-/* PREVIEW */
+function severityBadge(s){
+  if(s==="High") return `<span class="badge badge-high">HIGH</span>`;
+  if(s==="Medium") return `<span class="badge badge-medium">MEDIUM</span>`;
+  if(s==="Low") return `<span class="badge badge-low">LOW</span>`;
+  return "";
+}
+
 function showPreview(i){
-  previewPanel.innerHTML="<h3>"+i.issue+"</h3>";
+
+  let parts=(i.description||"").split("Code Snippet:");
+
+  previewPanel.innerHTML=`
+    <h3>${i.issue}</h3>
+
+    <p><b>Type:</b> ${i.type}</p>
+    <p><b>Severity:</b> ${i.severity}</p>
+    <p><b>WCAG:</b> ${i.wcagLevel} | ${i.wcagSC}</p>
+
+    <p><b>Description:</b></p>
+    <p>${(parts[0]||"").replace(/\n/g,"<br>")}</p>
+
+    <p><b>Code Snippet:</b></p>
+    <div class="code-block">${escapeHTML(parts[1]||"")}</div>
+
+    <p><b>Suggestion:</b></p>
+    <p>${(i.suggestion||"")}</p>
+  `;
+}
+
+function escapeHTML(t){
+  return (t||"")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
+}
+
+function generateReport(){
+
+  let rows=[["Type","Issue","Description","Suggestion","Severity","Level","SC"]];
+
+  issues.forEach(i=>{
+    rows.push([
+      i.type,i.issue,i.description,i.suggestion,
+      i.severity,i.wcagLevel,i.wcagSC
+    ]);
+  });
+
+  let ws=XLSX.utils.aoa_to_sheet(rows);
+  let wb=XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(wb,ws,"Report");
+
+  XLSX.writeFile(wb,"Accessibility_Report.xlsx");
 }
 
 </script>
