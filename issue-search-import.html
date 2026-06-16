@@ -65,12 +65,24 @@ document.getElementById("upload").addEventListener("change", function(e){
         return;
       }
 
-      const json = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      const json = XLSX.utils.sheet_to_json(ws);
 
-      if(json.length <= 1){
-        showError("Excel has no data rows");
-        return;
-      }
+/* ✅ FIX: DO NOT USE index-based columns */
+let issues = [];
+
+json.forEach(row => {
+
+  issues.push({
+    type: row["Type of Issue"] || "",
+    issue: row["Issue"] || "",
+    description: (row["Issue Description"] || "") + " " + (row["Rationale"] || ""),
+    suggestion: row["Suggestion"] || "",
+    severity: row["Severity"] || "",
+    wcagLevel: row["WCAG 2.0 Conformance Level"] || "",
+    wcagSC: row["WCAG 2.0"] || ""
+  });
+
+});
 
       let issues = [];
 
