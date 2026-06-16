@@ -100,12 +100,12 @@ input {
 let issues = [];
 let filtered = [];
 
-/* ✅ SMART VALUE PICKER (FIX WCAG + ALL KEYS) */
+/* ✅ VALUE PICKER */
 function getVal(obj, ...keys){
   for(let k of keys){
-    if(obj[k]) return obj[k];
+    if(obj[k] && obj[k] !== "") return obj[k];
   }
-  return "-";
+  return "";
 }
 
 /* ✅ LOAD */
@@ -129,7 +129,7 @@ window.onload = function(){
   }
 };
 
-/* ✅ SEARCH */
+/* ✅ SEARCH (CORE FIX) */
 searchBox.addEventListener("input", function(){
 
   let q = this.value.toLowerCase().trim();
@@ -140,37 +140,36 @@ searchBox.addEventListener("input", function(){
 
   renderList();
 
-  /* ✅ FIX: use SAME filtered data for suggestions */
-  showSuggestions(q);
+  showSuggestions();
 });
 
-/* ✅ FIXED SUGGESTIONS (MATCH LEFT PANEL COUNT) */
-function showSuggestions(q){
+/* ✅ SUGGESTIONS = SAME DATA AS LEFT PANEL */
+function showSuggestions(){
 
   let box = document.getElementById("suggestions");
+  let q = searchBox.value.trim();
 
   if(!q){
     box.style.display="none";
     return;
   }
 
-  let matches = filtered; // ✅ SAME AS LEFT PANEL
+  let matches = filtered; // ✅ SAME SOURCE
 
-  box.innerHTML = "";
+  box.innerHTML="";
 
   matches.forEach(i => {
 
     let div = document.createElement("div");
     div.className="suggestion-item";
 
-    let text = i["Issue"] || i.issue || "No Title";
+    let text = i["Issue"] || i.issue;
 
     div.innerText = text;
 
     div.onclick = function(){
 
       searchBox.value = text;
-
       box.style.display="none";
 
       filtered = [i];
@@ -189,17 +188,16 @@ function showSuggestions(q){
 /* ✅ LIST */
 function renderList(){
 
-  resultList.innerHTML = "";
+  resultList.innerHTML="";
 
   filtered.forEach(i => {
 
-    let div = document.createElement("div");
-
+    let div=document.createElement("div");
     div.className="card";
 
-    div.innerHTML = "<b>" + (i["Issue"] || i.issue || "No title") + "</b>";
+    div.innerHTML = "<b>" + (i["Issue"] || i.issue) + "</b>";
 
-    div.onclick = () => showDetails(i);
+    div.onclick = ()=> showDetails(i);
 
     resultList.appendChild(div);
   });
@@ -212,9 +210,11 @@ function showDetails(i){
   let type = getVal(i,"Type of Issue","type");
   let severity = getVal(i,"Severity","severity");
 
-  /* ✅ FIX WCAG */
+  /* ✅ BETTER WCAG FIX */
   let wcagLevel = getVal(i,"wcagLevel","WCAG 2.0 Conformance Level");
   let wcagSC = getVal(i,"wcagSC","WCAG 2.0");
+
+  if(!wcagSC) wcagSC = "-";  // fallback
 
   let description =
     (getVal(i,"Issue Description","description") + " " +
