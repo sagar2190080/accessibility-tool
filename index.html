@@ -32,13 +32,11 @@ header {
   overflow:auto;
 }
 
-/* search */
 input {
   width:100%;
   padding:8px;
 }
 
-/* suggestions */
 #suggestions {
   position:absolute;
   background:white;
@@ -47,7 +45,6 @@ input {
   max-height:250px;
   overflow:auto;
   display:none;
-  z-index:1000;
 }
 
 .suggestion-item {
@@ -58,7 +55,6 @@ input {
   background:#e6f0ff;
 }
 
-/* list */
 .card {
   padding:10px;
   border-bottom:1px solid #ccc;
@@ -67,7 +63,6 @@ input {
 .card:hover {
   background:#e6f0ff;
 }
-
 </style>
 </head>
 
@@ -81,7 +76,7 @@ input {
 
 <div class="left">
 
-<input id="searchBox" placeholder="Search..." autocomplete="off">
+<input id="searchBox" placeholder="Search...">
 <div id="suggestions"></div>
 
 <br>
@@ -100,15 +95,10 @@ input {
 let issues = [];
 let filtered = [];
 
-/* ✅ VALUE PICKER */
-function getVal(obj, ...keys){
-  for(let k of keys){
-    if(obj[k] && obj[k] !== "") return obj[k];
-  }
-  return "";
+function getVal(obj, key){
+  return obj[key] || "";
 }
 
-/* ✅ LOAD */
 window.onload = function(){
 
   let saved = localStorage.getItem("repoData");
@@ -119,7 +109,6 @@ window.onload = function(){
   }
 
   issues = JSON.parse(saved);
-
   filtered = issues;
 
   renderList();
@@ -129,11 +118,11 @@ window.onload = function(){
   }
 };
 
-/* ✅ SEARCH (CORE FIX) */
 searchBox.addEventListener("input", function(){
 
-  let q = this.value.toLowerCase().trim();
+  let q = this.value.toLowerCase();
 
+  /* ✅ SINGLE SOURCE FILTER */
   filtered = issues.filter(i =>
     JSON.stringify(i).toLowerCase().includes(q)
   );
@@ -143,10 +132,10 @@ searchBox.addEventListener("input", function(){
   showSuggestions();
 });
 
-/* ✅ SUGGESTIONS = SAME DATA AS LEFT PANEL */
 function showSuggestions(){
 
   let box = document.getElementById("suggestions");
+
   let q = searchBox.value.trim();
 
   if(!q){
@@ -154,11 +143,10 @@ function showSuggestions(){
     return;
   }
 
-  let matches = filtered; // ✅ SAME SOURCE
-
   box.innerHTML="";
 
-  matches.forEach(i => {
+  /* ✅ EXACT SAME DATA AS LEFT PANEL */
+  filtered.forEach(i => {
 
     let div = document.createElement("div");
     div.className="suggestion-item";
@@ -182,10 +170,9 @@ function showSuggestions(){
     box.appendChild(div);
   });
 
-  box.style.display = matches.length ? "block" : "none";
+  box.style.display = filtered.length ? "block" : "none";
 }
 
-/* ✅ LIST */
 function renderList(){
 
   resultList.innerHTML="";
@@ -203,24 +190,20 @@ function renderList(){
   });
 }
 
-/* ✅ DETAILS */
 function showDetails(i){
 
-  let issue = getVal(i,"Issue","issue");
-  let type = getVal(i,"Type of Issue","type");
-  let severity = getVal(i,"Severity","severity");
+  let issue = i["Issue"] || i.issue;
+  let type = i["Type of Issue"] || i.type || "-";
+  let severity = i["Severity"] || i.severity || "-";
 
-  /* ✅ BETTER WCAG FIX */
-  let wcagLevel = getVal(i,"wcagLevel","WCAG 2.0 Conformance Level");
-  let wcagSC = getVal(i,"wcagSC","WCAG 2.0");
-
-  if(!wcagSC) wcagSC = "-";  // fallback
+  let wcagLevel = i["wcagLevel"] || "-";
+  let wcagSC = i["wcagSC"] || "-";
 
   let description =
-    (getVal(i,"Issue Description","description") + " " +
-     getVal(i,"Rationale","rationale")).trim();
+    ((i["Issue Description"] || i.description || "") + " " +
+     (i["Rationale"] || i.rationale || "")).trim();
 
-  let suggestion = getVal(i,"Suggestion","suggestion");
+  let suggestion = i["Suggestion"] || i.suggestion || "-";
 
   previewPanel.innerHTML = `
     <h2>${issue}</h2>
