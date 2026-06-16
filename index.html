@@ -37,6 +37,7 @@ input {
   padding:8px;
 }
 
+/* suggestions */
 #suggestions {
   position:absolute;
   background:white;
@@ -45,6 +46,7 @@ input {
   max-height:250px;
   overflow:auto;
   display:none;
+  z-index:1000;
 }
 
 .suggestion-item {
@@ -64,6 +66,7 @@ input {
   background:#e6f0ff;
 }
 </style>
+
 </head>
 
 <body>
@@ -76,10 +79,11 @@ input {
 
 <div class="left">
 
-<input id="searchBox" placeholder="Search...">
+<input id="searchBox" placeholder="Search..." autocomplete="off">
 <div id="suggestions"></div>
 
 <br>
+
 <div id="resultList"></div>
 
 </div>
@@ -95,16 +99,13 @@ input {
 let issues = [];
 let filtered = [];
 
-function getVal(obj, key){
-  return obj[key] || "";
-}
-
+/* LOAD DATA */
 window.onload = function(){
 
   let saved = localStorage.getItem("repoData");
 
   if(!saved){
-    previewPanel.innerHTML = "<h3>Please import Excel first</h3>";
+    previewPanel.innerHTML = "<h3>Please upload Excel first</h3>";
     return;
   }
 
@@ -118,20 +119,20 @@ window.onload = function(){
   }
 };
 
+/* SEARCH */
 searchBox.addEventListener("input", function(){
 
-  let q = this.value.toLowerCase();
+  let q = this.value.toLowerCase().trim();
 
-  /* ✅ SINGLE SOURCE FILTER */
   filtered = issues.filter(i =>
     JSON.stringify(i).toLowerCase().includes(q)
   );
 
   renderList();
-
   showSuggestions();
 });
 
+/* ✅ SUGGESTIONS SAME AS LEFT */
 function showSuggestions(){
 
   let box = document.getElementById("suggestions");
@@ -145,13 +146,12 @@ function showSuggestions(){
 
   box.innerHTML="";
 
-  /* ✅ EXACT SAME DATA AS LEFT PANEL */
   filtered.forEach(i => {
 
     let div = document.createElement("div");
     div.className="suggestion-item";
 
-    let text = i["Issue"] || i.issue;
+    let text = i["Issue"] || i.issue || "No title";
 
     div.innerText = text;
 
@@ -161,9 +161,7 @@ function showSuggestions(){
       box.style.display="none";
 
       filtered = [i];
-
       renderList();
-
       showDetails(i);
     };
 
@@ -173,6 +171,7 @@ function showSuggestions(){
   box.style.display = filtered.length ? "block" : "none";
 }
 
+/* LIST */
 function renderList(){
 
   resultList.innerHTML="";
@@ -182,7 +181,7 @@ function renderList(){
     let div=document.createElement("div");
     div.className="card";
 
-    div.innerHTML = "<b>" + (i["Issue"] || i.issue) + "</b>";
+    div.innerHTML = "<b>" + (i["Issue"] || i.issue || "No title") + "</b>";
 
     div.onclick = ()=> showDetails(i);
 
@@ -190,9 +189,10 @@ function renderList(){
   });
 }
 
+/* DETAILS */
 function showDetails(i){
 
-  let issue = i["Issue"] || i.issue;
+  let issue = i["Issue"] || i.issue || "-";
   let type = i["Type of Issue"] || i.type || "-";
   let severity = i["Severity"] || i.severity || "-";
 
