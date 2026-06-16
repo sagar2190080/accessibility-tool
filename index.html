@@ -17,7 +17,7 @@ header {
   justify-content:space-between;
 }
 
-/* Dashboard */
+/* DASHBOARD */
 .dashboard {
   display:flex;
   gap:10px;
@@ -28,20 +28,28 @@ header {
   flex:1;
   padding:10px;
   border-radius:6px;
-  text-align:center;
   color:white;
+  text-align:center;
 }
 .total { background:#007bff; }
 .high { background:#dc3545; }
 .medium { background:#ffc107; color:black; }
 .low { background:#28a745; }
 
-/* Layout */
-.wrapper { display:flex; height:85vh; }
+/* FILTERS */
+.filters {
+  padding:10px;
+  background:white;
+  display:flex;
+  gap:10px;
+}
+
+/* LAYOUT */
+.wrapper { display:flex; height:75vh; }
 .left { width:40%; background:white; padding:10px; overflow:auto; }
 .right { width:60%; padding:20px; }
 
-/* Search */
+/* SEARCH */
 .search-container { position:relative; }
 
 #suggestions {
@@ -49,18 +57,12 @@ header {
   width:100%;
   background:white;
   border:1px solid #ccc;
-  display:none;
   max-height:200px;
   overflow:auto;
+  display:none;
 }
 
-.suggestion-item {
-  padding:8px;
-  cursor:pointer;
-}
-.suggestion-item:hover { background:#eef2ff; }
-
-/* List */
+/* LIST */
 .card {
   padding:10px;
   border-bottom:1px solid #eee;
@@ -68,7 +70,13 @@ header {
 }
 .card:hover { background:#eef2ff; }
 
-/* Code */
+/* GROUP */
+.group-title {
+  background:#ddd;
+  padding:5px;
+  font-weight:bold;
+}
+
 .code-block {
   background:#f4f4f4;
   padding:10px;
@@ -92,13 +100,33 @@ header {
   <div id="lowBox" class="stat low">Low: 0</div>
 </div>
 
+<div class="filters">
+  <select id="severityFilter">
+    <option value="">All Severity</option>
+    <option>High</option>
+    <option>Medium</option>
+    <option>Low</option>
+  </select>
+
+  <select id="levelFilter">
+    <option value="">All WCAG</option>
+    <option>A</option>
+    <option>AA</option>
+    <option>AAA</option>
+  </select>
+
+  <select id="viewMode">
+    <option value="list">List View</option>
+    <option value="group">WCAG Group View</option>
+  </select>
+</div>
+
 <div class="wrapper">
 
 <div class="left">
 
 <div class="search-container">
   <input id="searchBox" placeholder="Search..." style="width:100%;">
-  <div id="suggestions"></div>
 </div>
 
 <div id="resultList"></div>
@@ -113,129 +141,123 @@ header {
 
 <script>
 
-let issues = [];
-let filtered = [];
+let issues=[], filtered=[];
 
-/* SAFE */
-function safe(v){
-  return (v || "").toString();
-}
+function safe(v){ return (v||"").toString(); }
 
-/* LOAD DATA */
-window.onload = function(){
+/* LOAD */
+window.onload=function(){
+
   fetch("./repository.json")
-  .then(res=>{
-    if(!res.ok) throw new Error("File not found");
-    return res.json();
-  })
+  .then(r=>r.json())
   .then(data=>{
-    issues = Array.isArray(data) ? data : [];
-    filtered = issues;
+
+    issues=data;
+    filtered=data;
 
     updateDashboard();
-    render();
+    applyFilters();
 
-    if(filtered.length){
-      showPreview(filtered[0]);
-    }
-  })
-  .catch(()=>{
-    previewPanel.innerHTML="<h3 style='color:red;'>Error loading data</h3>";
   });
 };
 
 /* DASHBOARD */
 function updateDashboard(){
-  totalBox.innerText = "Total: " + issues.length;
-  highBox.innerText = "High: " + issues.filter(i=>i.severity==="High").length;
-  mediumBox.innerText = "Medium: " + issues.filter(i=>i.severity==="Medium").length;
-  lowBox.innerText = "Low: " + issues.filter(i=>i.severity==="Low").length;
+
+  totalBox.innerText="Total: "+issues.length;
+  highBox.innerText="High: "+issues.filter(i=>i.severity==="High").length;
+  mediumBox.innerText="Medium: "+issues.filter(i=>i.severity==="Medium").length;
+  lowBox.innerText="Low: "+issues.filter(i=>i.severity==="Low").length;
 }
 
-/* ✅ SMART SEARCH (MAIN FIX) */
-document.getElementById("searchBox").addEventListener("input", function(){
+/* FILTER LOGIC */
+document.getElementById("searchBox").addEventListener("input",applyFilters);
+document.getElementById("severityFilter").addEventListener("change",applyFilters);
+document.getElementById("levelFilter").addEventListener("change",applyFilters);
+document.getElementById("viewMode").addEventListener("change",applyFilters);
 
-  let q = this.value.toLowerCase().trim();
+function applyFilters(){
 
-  if(!q){
-    filtered = issues;
-  } else {
+  let q = searchBox.value.toLowerCase();
+  let sev = severityFilter.value;
+  let lvl = levelFilter.value;
 
-    filtered = issues.filter(i => {
-      let text = (
-        safe(i.issue) + " " +
-        safe(i.description) + " " +
-        safe(i.suggestion)
-      ).toLowerCase();
+  filtered = issues.filter(i => {
 
-      return text.includes(q);
-    });
+    let matchText =
+      safe(i.issue).toLowerCase().includes(q) ||
+      safe(i.description).toLowerCase().includes(q);
 
-    /* ✅ fallback (never empty UI) */
-    if(filtered.length === 0){
-      filtered = issues;
-    }
-  }
+    let matchSev = !sev || i.severity === sev;
+    let matchLvl = !lvl || i.wcagLevel === lvl;
 
-  render();
-  showSuggestions(q);
-
-  if(filtered.length){
-    showPreview(filtered[0]);
-  }
-});
-
-/* ✅ SUGGESTIONS BACK */
-function showSuggestions(q){
-
-  let box = document.getElementById("suggestions");
-
-  if(!q){
-    box.style.display="none";
-    return;
-  }
-
-  let matches = issues.filter(i =>
-    safe(i.issue).toLowerCase().includes(q)
-  );
-
-  box.innerHTML="";
-
-  matches.forEach(i=>{
-    let div=document.createElement("div");
-    div.className="suggestion-item";
-    div.innerText=i.issue;
-
-    div.onclick=function(){
-      searchBox.value=i.issue;
-      box.style.display="none";
-
-      filtered=[i];
-      render();
-      showPreview(i);
-    };
-
-    box.appendChild(div);
+    return matchText && matchSev && matchLvl;
   });
 
-  box.style.display = matches.length ? "block" : "none";
+  if(viewMode.value === "group"){
+    renderGrouped();
+  } else {
+    renderList();
+  }
+
+  if(filtered.length > 0){
+    showPreview(filtered[0]);
+  } else {
+    previewPanel.innerHTML="<h3>No results</h3>";
+  }
 }
 
-/* LIST */
-function render(){
+/* LIST VIEW */
+function renderList(){
 
-  let list=document.getElementById("resultList");
-  list.innerHTML="";
+  resultList.innerHTML="";
 
   filtered.forEach(i=>{
+
     let div=document.createElement("div");
     div.className="card";
 
-    div.innerHTML="<b>"+safe(i.issue)+"</b>";
+    div.innerHTML=`<b>${i.issue}</b>`;
 
     div.onclick=()=>showPreview(i);
-    list.appendChild(div);
+
+    resultList.appendChild(div);
   });
+}
+
+/* WCAG GROUP VIEW */
+function renderGrouped(){
+
+  resultList.innerHTML="";
+
+  let groups = {};
+
+  filtered.forEach(i=>{
+    let key = i.wcagSC || "Other";
+
+    if(!groups[key]) groups[key]=[];
+    groups[key].push(i);
+  });
+
+  for(let key in groups){
+
+    let title=document.createElement("div");
+    title.className="group-title";
+    title.innerText="WCAG "+key;
+
+    resultList.appendChild(title);
+
+    groups[key].forEach(i=>{
+
+      let div=document.createElement("div");
+      div.className="card";
+      div.innerText=i.issue;
+
+      div.onclick=()=>showPreview(i);
+
+      resultList.appendChild(div);
+    });
+  }
 }
 
 /* PREVIEW */
@@ -254,27 +276,20 @@ function showPreview(i){
     <p>${parts[0]}</p>
 
     <p><b>Code Snippet:</b></p>
-    <div class="code-block">${escapeHTML(parts[1] || "")}</div>
+    <div class="code-block">${parts[1]||""}</div>
 
     <p><b>Suggestion:</b></p>
     <p>${safe(i.suggestion)}</p>
   `;
 }
 
-/* SAFE HTML */
-function escapeHTML(t){
-  return safe(t)
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;");
-}
-
 /* EXPORT */
 function generateReport(){
 
-  let rows=[["Issue","Severity"]];
+  let rows=[["Issue","Severity","WCAG"]];
 
   issues.forEach(i=>{
-    rows.push([i.issue,i.severity]);
+    rows.push([i.issue,i.severity,i.wcagSC]);
   });
 
   let ws=XLSX.utils.aoa_to_sheet(rows);
