@@ -66,43 +66,41 @@ input {
 let issues = [];
 let filtered = [];
 
-/* ✅ FIX: SAFE VALUE FUNCTION */
-function safe(val){
-  if(!val || val.trim()==="") return "-";
-  return val;
+/* ✅ CRITICAL FIX: Smart key resolver */
+function get(obj, keyword){
+  let key = Object.keys(obj).find(k => 
+    k.trim().toLowerCase().includes(keyword.toLowerCase())
+  );
+  return key ? obj[key] : "";
 }
 
-/* ✅ FIX: HANDLE BAD SEVERITY DATA */
-function fixSeverity(i){
-  if(i["Severity"]) return i["Severity"];
-
-  // fallback patterns in your JSON
-  if(i["Issue"]==="High" || i["Issue"]==="Medium" || i["Issue"]==="Low")
-    return i["Issue"];
-
-  if(i["Suggestion"] && i["Suggestion"].includes("High"))
-    return "High";
-
-  return "-";
-}
-
-/* ✅ LOAD DATA */
+/* ✅ LOAD */
 window.onload = function(){
 
   fetch("./repository.json")
   .then(res => res.json())
   .then(data => {
 
-    // ✅ remove garbage rows (very important for your file)
-    issues = data.filter(x => x["Issue"] && x["Issue"].length > 5);
+    issues = data.map(row => ({
+      issue: get(row,"issue"),
+      type: get(row,"type"),
+      description: get(row,"description"),
+      rationale: get(row,"rationale"),
+      suggestion: get(row,"suggestion"),
+      severity: get(row,"severity"),
+      wcagLevel: get(row,"level"),
+      wcagSC: get(row,"wcag")
+    }))
+    .filter(x => x.issue && x.issue.length > 5);
 
     filtered = issues;
 
-    renderList();
+    render();
 
     if(filtered.length){
-      showDetails(filtered[0]);
+      show(filtered[0]);
     }
+
   });
 
 };
@@ -113,61 +111,52 @@ searchBox.addEventListener("input", function(){
   let q = this.value.toLowerCase();
 
   filtered = issues.filter(i =>
-    (i["Issue"] + " " + i["Issue Description"] + " " + i["Suggestion"])
+    (i.issue + " " + i.description + " " + i.suggestion)
     .toLowerCase()
     .includes(q)
   );
 
-  renderList();
+  render();
 
 });
 
-/* ✅ LEFT SIDE LIST */
-function renderList(){
+/* ✅ LIST */
+function render(){
 
-  resultList.innerHTML = "";
+  resultList.innerHTML="";
 
-  filtered.forEach(i => {
+  filtered.forEach(i=>{
 
-    let div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = "<b>" + i["Issue"] + "</b>";
+    let div=document.createElement("div");
+    div.className="card";
 
-    div.onclick = () => showDetails(i);
+    div.innerHTML = "<b>"+i.issue+"</b>";
+
+    div.onclick = ()=> show(i);
 
     resultList.appendChild(div);
   });
-
 }
 
-/* ✅ RIGHT SIDE DETAILS (FINAL FIX) */
-function showDetails(i){
+/* ✅ DETAIL PANEL */
+function show(i){
 
-  let type = safe(i["Type of Issue"]);
-  let severity = fixSeverity(i);
-
-  let wcagLevel = safe(i["WCAG 2.0 Conformance Level"]);
-  let wcagSC = safe(i["WCAG 2.0"]);
-
-  let description = ((i["Issue Description"] || "") + " " +
-                     (i["Rationale"] || "")).trim();
-
-  let suggestion = safe(i["Suggestion"]);
+  let desc = (i.description + " " + i.rationale).trim();
 
   previewPanel.innerHTML = `
-    <h2>${i["Issue"]}</h2>
+    <h2>${i.issue}</h2>
 
-    <p><b>Type:</b> ${type}</p>
-    <p><b>Severity:</b> ${severity}</p>
-    <p><b>WCAG:</b> ${wcagLevel} | ${wcagSC}</p>
+    <p><b>Type:</b> ${i.type || "-"}</p>
+    <p><b>Severity:</b> ${i.severity || "-"}</p>
+    <p><b>WCAG:</b> ${i.wcagLevel || "-"} | ${i.wcagSC || "-"}</p>
 
     <hr>
 
     <h3>Description</h3>
-    <p>${safe(description)}</p>
+    <p>${desc || "-"}</p>
 
     <h3>Suggestion</h3>
-    <p>${suggestion}</p>
+    <p>${i.suggestion || "-"}</p>
   `;
 }
 
