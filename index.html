@@ -86,7 +86,45 @@ function safe(v){
 /* ✅ SAFE LOAD */
 window.onload=function(){
 
-  loadData();
+  fetch("./repository.json")
+    .then(res => {
+      if (!res.ok) {
+        throw new Error("repository.json not found");
+      }
+      return res.json();
+    })
+    .then(data => {
+
+      if (!Array.isArray(data)) {
+        throw new Error("Invalid JSON format");
+      }
+
+      issues = data;
+      filtered = issues;
+
+      updateDashboard();
+      render();
+
+      if (filtered.length > 0) {
+        showPreview(filtered[0]);
+      }
+
+    })
+    .catch(err => {
+
+      console.error("LOAD ERROR:", err);
+
+      previewPanel.innerHTML = `
+        <h3 style="color:red;">Error loading data</h3>
+        <p>Fix required:</p>
+        <ul>
+          <li>repository.json must exist</li>
+          <li>Correct file name (lowercase)</li>
+          <li>Valid JSON format</li>
+          <li>File must be in root folder</li>
+        </ul>
+      `;
+    });
 };
 
 function loadData(){
