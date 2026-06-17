@@ -45,7 +45,6 @@ input {
   max-height:250px;
   overflow:auto;
   display:none;
-  z-index:1000;
 }
 
 .suggestion-item {
@@ -77,13 +76,11 @@ input {
 <div class="wrapper">
 
 <div class="left">
-
-<input id="searchBox" placeholder="Search..." autocomplete="off">
+<input id="searchBox" placeholder="Search...">
 <div id="suggestions"></div>
 
 <br>
 <div id="resultList"></div>
-
 </div>
 
 <div class="right" id="previewPanel">
@@ -97,7 +94,7 @@ input {
 let issues = [];
 let filtered = [];
 
-/* ✅ LOAD DATA */
+/* LOAD */
 window.onload = function(){
 
   let saved = localStorage.getItem("repoData");
@@ -111,13 +108,10 @@ window.onload = function(){
   filtered = issues;
 
   renderList();
-
-  if(filtered.length){
-    showDetails(filtered[0]);
-  }
+  showDetails(filtered[0]);
 };
 
-/* ✅ SEARCH */
+/* SEARCH */
 searchBox.addEventListener("input", function(){
 
   let q = this.value.toLowerCase();
@@ -132,41 +126,38 @@ searchBox.addEventListener("input", function(){
   showSuggestions();
 });
 
-/* ✅ SUGGESTIONS */
+/* SUGGESTIONS */
 function showSuggestions(){
 
-  let box = document.getElementById("suggestions");
-
   if(!searchBox.value){
-    box.style.display="none";
+    suggestions.style.display="none";
     return;
   }
 
-  box.innerHTML="";
+  suggestions.innerHTML="";
 
   filtered.forEach(i => {
 
-    let div = document.createElement("div");
+    let div=document.createElement("div");
     div.className="suggestion-item";
-
     div.innerText = i.issue;
 
-    div.onclick = function(){
-      searchBox.value = i.issue;
-      box.style.display="none";
+    div.onclick=()=>{
+      searchBox.value=i.issue;
+      suggestions.style.display="none";
 
-      filtered = [i];
+      filtered=[i];
       renderList();
       showDetails(i);
     };
 
-    box.appendChild(div);
+    suggestions.appendChild(div);
   });
 
-  box.style.display = filtered.length ? "block" : "none";
+  suggestions.style.display="block";
 }
 
-/* ✅ LIST */
+/* LIST */
 function renderList(){
 
   resultList.innerHTML="";
@@ -175,29 +166,31 @@ function renderList(){
 
     let div=document.createElement("div");
     div.className="card";
+    div.innerHTML="<b>"+i.issue+"</b>";
 
-    div.innerHTML = "<b>" + i.issue + "</b>";
-
-    div.onclick = () => showDetails(i);
+    div.onclick=()=>showDetails(i);
 
     resultList.appendChild(div);
   });
 }
 
-/* ✅ DETAILS PANEL */
+/* DETAILS */
 function showDetails(i){
 
-  previewPanel.innerHTML = `
+  previewPanel.innerHTML=`
     <h2>${i.issue}</h2>
 
-    <p><b>Type:</b> ${i.type || "-"}</p>
-    <p><b>Severity:</b> ${i.severity || "-"}</p>
-    <p><b>WCAG:</b> ${i.wcagLevel || "-"} | ${i.wcagSC || "-"}</p>
+    <p><b>Type:</b> ${i.type}</p>
+    <p><b>Severity:</b> ${i.severity}</p>
+    <p><b>WCAG:</b> ${i.wcagLevel} | ${i.wcagSC}</p>
 
     <hr>
 
     <h3>Description</h3>
-    <p>${i.description} ${i.rationale}</p>
+    <p>${i.description}</p>
+
+    <h3>Rationale</h3>
+    <p>${i.rationale}</p>
 
     <h3>Suggestion</h3>
     <p>${i.suggestion}</p>
