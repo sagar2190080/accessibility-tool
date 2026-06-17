@@ -4,13 +4,11 @@
 <meta charset="UTF-8">
 <title>Accessibility Tool</title>
 
-<!-- Highlight.js -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<!-- ✅ Highlight.js -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
 <style>
-
-/* ✅ BASE */
 body{
   margin:0;
   font-family:"Segoe UI", Arial;
@@ -23,29 +21,36 @@ body{
   height:100vh;
 }
 
-/* LEFT PANEL */
+/* ✅ LEFT PANEL */
 .left{
   width:28%;
-  background:#ffffff;
+  background:white;
   border-right:1px solid #ddd;
   overflow:auto;
 }
 
+/* LIST ITEM */
 .card{
-  padding:12px;
-  border-bottom:1px solid #eee;
+  padding:12px 14px;
+  border-bottom:1px solid #f0f0f0;
   cursor:pointer;
-  font-size:14px;
   transition:0.2s;
 }
+
 .card:hover{
-  background:#f4f7ff;
+  background:#f6f8ff;
 }
 
-/* RIGHT PANEL */
+.card.active{
+  background:#e9efff;
+  border-left:4px solid #2f56d3;
+  padding-left:10px;
+}
+
+/* ✅ RIGHT PANEL */
 .right{
   width:72%;
-  background:#fff;
+  background:white;
   display:flex;
   flex-direction:column;
 }
@@ -55,23 +60,16 @@ body{
   font-size:20px;
   font-weight:600;
   padding:15px;
-  border-bottom:1px solid #eee;
 }
 
-/* ✅ TAB + SEVERITY BAR */
+/* TABS */
 .tab-row{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  position:sticky;
-  top:0;
-  background:#fafafa;
   border-bottom:1px solid #ddd;
-  padding:0 10px;
-  z-index:10;
 }
 
-/* TABS */
 .tabs{
   display:flex;
 }
@@ -79,77 +77,42 @@ body{
 .tab{
   padding:10px 14px;
   cursor:pointer;
-  font-size:14px;
   border-bottom:3px solid transparent;
-  transition:0.2s;
-}
-
-.tab:hover{
-  background:#f3f5f9;
 }
 
 .tab.active{
   border-bottom:3px solid #2f56d3;
   font-weight:600;
-  background:white;
 }
 
-/* ✅ SEVERITY BADGE */
-.severity-box{
-  padding:5px 10px;
+/* SEVERITY */
+.severity{
+  margin-right:10px;
+  padding:6px 12px;
   border-radius:4px;
-  font-size:13px;
   font-weight:600;
 }
 
 .high{background:#ff6a00;color:white;}
-.medium{background:#ffc107;color:black;}
+.medium{background:#ffc107;}
 .low{background:#4caf50;color:white;}
 
-/* ✅ CONTENT */
+/* CONTENT */
 .content{
   padding:18px;
   overflow:auto;
   line-height:1.6;
-  font-size:14px;
 }
 
-/* TEXT */
-.content p{
-  margin-bottom:12px;
-}
-
-/* LIST */
-.content ul{
-  padding-left:20px;
-}
-
-/* ✅ CODE BLOCK */
+/* CODE */
 pre{
   background:#f8f9fa;
-  border:1px solid #dcdcdc;
+  border:1px solid #ddd;
   border-radius:6px;
   padding:12px;
   overflow:auto;
-  box-shadow:0 1px 3px rgba(0,0,0,0.05);
+  font-size:13px;
 }
-
-/* LINE NUMBERS */
-.code-line{
-  display:block;
-  padding-left:40px;
-  position:relative;
-}
-
-.code-line::before{
-  position:absolute;
-  left:10px;
-  color:#999;
-  font-size:11px;
-  counter-increment:line;
-  content:counter(line);
-}
-
 </style>
 </head>
 
@@ -157,10 +120,8 @@ pre{
 
 <div class="wrapper">
 
-<!-- LEFT -->
 <div class="left" id="resultList"></div>
 
-<!-- RIGHT -->
 <div class="right" id="previewPanel">
   <h3 style="padding:20px">Select an issue</h3>
 </div>
@@ -171,6 +132,7 @@ pre{
 
 let issues=[];
 let current={};
+let currentIndex=0;
 
 /* LOAD */
 window.onload=function(){
@@ -179,23 +141,67 @@ window.onload=function(){
 
   issues=JSON.parse(data);
   renderList();
-}
 
-/* LIST */
+  if(issues.length){
+    showDetails(issues[0]);
+  }
+};
+
+/* ✅ LEFT PANEL LIST */
 function renderList(){
 
   resultList.innerHTML="";
 
-  issues.forEach(i=>{
-    let div=document.createElement("div");
-    div.className="card";
-    div.innerText=i.issue;
-    div.onclick=()=>showDetails(i);
-    resultList.appendChild(div);
+  issues.forEach((i,index)=>{
+
+    let d=document.createElement("div");
+    d.className="card";
+    d.innerText=i.issue;
+
+    if(index===currentIndex){
+      d.classList.add("active");
+    }
+
+    d.onclick=()=>{
+      currentIndex=index;
+      renderList();
+      showDetails(i);
+    };
+
+    resultList.appendChild(d);
   });
 }
 
-/* SWITCH TAB */
+/* ✅ SHOW DETAILS */
+function showDetails(i){
+
+  current=i;
+
+  previewPanel.innerHTML=`
+    <div class="title">${i.issue}</div>
+
+    <div class="tab-row">
+      <div class="tabs">
+        <div class="tab active" id="t1" onclick="switchTab('t1')">Description</div>
+        <div class="tab" id="t2" onclick="switchTab('t2')">User Impact</div>
+        <div class="tab" id="t3" onclick="switchTab('t3')">Recommendations</div>
+      </div>
+
+      <div class="severity ${
+        i.severity==="High"?"high":
+        i.severity==="Medium"?"medium":"low"
+      }">${i.severity}</div>
+    </div>
+
+    <div class="content" id="contentArea">
+      ${format(i.description)}
+    </div>
+  `;
+
+  applyHighlight();
+}
+
+/* ✅ SWITCH TABS */
 function switchTab(tab){
 
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
@@ -208,82 +214,78 @@ function switchTab(tab){
   if(tab==="t3") content=format(current.suggestion);
 
   contentArea.innerHTML=content;
-
-  document.querySelectorAll("pre code").forEach(b=>{
-    hljs.highlightElement(b);
-  });
+  applyHighlight();
 }
 
-/* SHOW DETAILS */
-function showDetails(i){
-
-  current=i;
-
-  previewPanel.innerHTML=`
-    <div class="title">${i.issue}</div>
-
-    <div class="tab-row">
-
-      <div class="tabs">
-        <div class="tab active" id="t1" onclick="switchTab('t1')">Description</div>
-        <div class="tab" id="t2" onclick="switchTab('t2')">User Impact</div>
-        <div class="tab" id="t3" onclick="switchTab('t3')">Recommendations</div>
-      </div>
-
-      <div class="severity-box ${
-        i.severity==="High"?"high":
-        i.severity==="Medium"?"medium":"low"
-      }">
-        ${i.severity}
-      </div>
-
-    </div>
-
-    <div class="content" id="contentArea">
-      ${format(i.description)}
-    </div>
-  `;
-
-  document.querySelectorAll("pre code").forEach(b=>{
-    hljs.highlightElement(b);
-  });
-}
-
-/* ✅ PREMIUM FORMATTER */
+/* ✅ FINAL FORMATTER (FULL FIXED) */
 function format(text){
 
   if(!text) return "<p>-</p>";
 
-  if(/Code Snippet:/i.test(text)){
-    let parts=text.split(/Code Snippet:/i);
-    return `<p>${parts[0]}</p><pre><code>${escapeHTML(parts[1])}</code></pre>`;
+  let input=String(text);
+
+  let normalText="";
+  let codeText="";
+
+  /* detect code */
+  if(/Code Snippet:/i.test(input)){
+    let parts=input.split(/Code Snippet:/i);
+    normalText=parts[0].trim();
+    codeText=parts[1].trim();
+  }
+  else if(/<[^>]+>/.test(input)){
+    let pos=input.search(/<[^>]+>/);
+    normalText=input.substring(0,pos).trim();
+    codeText=input.substring(pos).trim();
+  }
+  else{
+    return `<p>${input}</p>`;
   }
 
-  if(/<[^>]+>/.test(text)){
-    let pos=text.search(/<[^>]+>/);
-    let txt=text.substring(0,pos);
-    let code=text.substring(pos);
-    return `<p>${txt}</p><pre><code>${escapeHTML(code)}</code></pre>`;
-  }
+  /* ✅ FIXED TAG SPLIT */
+  codeText = codeText
+    .replace(/>\s*</g, ">\n<")
+    .replace(/</g,"\n<")
+    .replace(/>/g,">\n")
+    .replace(/\n{2,}/g,"\n");
 
-  return formatTextOnly(text);
+  let lines = codeText.split("\n")
+    .map(l=>l.trim())
+    .filter(l=>l);
+
+  let formatted=[];
+  let indent=0;
+
+  lines.forEach(line=>{
+
+    let isClosing=/^<\/.+>/.test(line);
+    let isOpening=/^<[^\/!][^>]*>$/.test(line);
+    let isSelfClosing=/\/>$/.test(line);
+
+    if(isClosing) indent--;
+
+    formatted.push("  ".repeat(Math.max(0,indent)) + line);
+
+    if(isOpening && !isSelfClosing){
+      indent++;
+    }
+  });
+
+  let finalCode=formatted.join("\n")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
+
+  return `
+    ${normalText ? `<p>${normalText}</p>` : ""}
+    <pre><code class="language-html">${finalCode}</code></pre>
+  `;
 }
 
-/* TEXT FORMAT */
-function formatTextOnly(text){
-
-  let lines=text.split("\n").map(l=>l.trim()).filter(l=>l);
-
-  if(lines.every(l=>l.startsWith("•")||l.startsWith("-"))){
-    return `<ul>${lines.map(l=>`<li>${l.replace(/^[-•]\s*/,"")}</li>`).join("")}</ul>`;
-  }
-
-  return `<p>${lines.join(" ")}</p>`;
-}
-
-/* ESCAPE */
-function escapeHTML(str){
-  return str.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+/* ✅ HIGHLIGHT */
+function applyHighlight(){
+  document.querySelectorAll("pre code").forEach(block=>{
+    hljs.highlightElement(block);
+  });
 }
 
 </script>
