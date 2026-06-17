@@ -4,15 +4,11 @@
 <meta charset="UTF-8">
 <title>Accessibility Tool</title>
 
-<!-- Highlight -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-
-<!-- Export Excel -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
-
 body {
   font-family: "Segoe UI";
   margin:0;
@@ -41,7 +37,6 @@ header {
   padding:10px;
   border-radius:8px;
   text-align:center;
-  box-shadow:0 2px 6px rgba(0,0,0,0.1);
   font-weight:bold;
 }
 
@@ -50,17 +45,14 @@ header {
 .low { border-top:4px solid #28a745; }
 
 /* LAYOUT */
-.wrapper {
-  display:flex;
-  height:80vh;
-}
+.wrapper { display:flex; height:80vh; }
 
 .left {
   width:35%;
   background:white;
+  border-right:1px solid #ddd;
   display:flex;
   flex-direction:column;
-  border-right:1px solid #ddd;
 }
 
 .right {
@@ -79,6 +71,7 @@ input, select, button {
   width:100%;
   padding:8px;
   margin-bottom:6px;
+  border-radius:6px;
 }
 
 /* LIST */
@@ -89,19 +82,20 @@ input, select, button {
 }
 .card:hover { background:#f0f4ff; }
 
-/* META */
+/* META ROW */
 .meta-row {
   display:flex;
   gap:10px;
-  margin:10px 0;
   flex-wrap:wrap;
+  margin:10px 0;
 }
 
 .meta-item {
-  padding:6px 10px;
+  padding:6px 12px;
   border-radius:20px;
+  font-size:13px;
   color:white;
-  font-size:12px;
+  font-weight:bold;
 }
 
 .type { background:#007bff; }
@@ -110,21 +104,27 @@ input, select, button {
 .sev-low { background:#28a745; }
 .wcag { background:#6f42c1; }
 
-/* CODE */
+/* SECTIONS */
+.section { margin-top:20px; }
+.section h3 { margin-bottom:5px; }
+
+/* ✅ CODE BLOCK */
 pre {
   background:#f6f8fa;
-  padding:10px;
-  border-radius:6px;
+  padding:12px;
+  border-radius:8px;
+  overflow:auto;
+  white-space:pre-wrap;
 }
-
 </style>
+
 </head>
 
 <body>
 
 <header>Accessibility Tool</header>
 
-<!-- ✅ DASHBOARD -->
+<!-- DASHBOARD -->
 <div class="dashboard">
   <div class="card-box">Total<br><span id="totalCount">0</span></div>
   <div class="card-box high">High<br><span id="highCount">0</span></div>
@@ -134,7 +134,7 @@ pre {
 
 <div class="wrapper">
 
-<!-- LEFT -->
+<!-- LEFT PANEL -->
 <div class="left">
 
 <div class="filters">
@@ -145,7 +145,6 @@ pre {
 <select id="severityFilter"><option value="">All Severity</option></select>
 <select id="wcagFilter"><option value="">All WCAG</option></select>
 
-<!-- ✅ EXPORT BUTTON -->
 <button onclick="exportToExcel()">⬇ Export Filtered Data</button>
 
 </div>
@@ -154,7 +153,7 @@ pre {
 
 </div>
 
-<!-- RIGHT -->
+<!-- RIGHT PANEL -->
 <div class="right" id="previewPanel">
 <h3>Select an issue</h3>
 </div>
@@ -168,27 +167,38 @@ let filtered = [];
 
 /* ESCAPE */
 function escapeHTML(text){
-  return text?.replace(/</g,"&lt;").replace(/>/g,"&gt;") || "";
+  return text?.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") || "";
 }
 
-/* FORMAT CONTENT */
+/* ✅ FIXED CODE SNIPPET HANDLING */
 function formatContent(text){
 
-  if(!text) return "";
+  if(!text) return "<p>-</p>";
 
   let escaped = escapeHTML(text);
 
+  // Case 1: Explicit marker
   if(escaped.includes("Code Snippet:")){
-    let p = escaped.split("Code Snippet:");
-    return `<p>${p[0]}</p><pre><code>${p[1]}</code></pre>`;
+    let parts = escaped.split("Code Snippet:");
+
+    return `
+      <p>${parts[0]}</p>
+      <b>Code Snippet:</b>
+      <pre><code class="language-html">${parts[1].trim()}</code></pre>
+    `;
   }
 
-  let match = escaped.match(/(&lt;.*&gt;)/);
+  // ✅ Case 2: detect html start
+  let htmlStart = escaped.search(/&lt;[a-zA-Z]/);
 
-  if(match){
-    let before = escaped.substring(0, match.index);
-    let code = escaped.substring(match.index);
-    return `<p>${before}</p><pre><code>${code}</code></pre>`;
+  if(htmlStart !== -1){
+    let textPart = escaped.substring(0, htmlStart);
+    let codePart = escaped.substring(htmlStart);
+
+    return `
+      ${textPart ? `<p>${textPart.trim()}</p>` : ""}
+      <pre><code class="language-html">${codePart.trim()}</code></pre>
+    `;
   }
 
   return `<p>${escaped}</p>`;
@@ -290,30 +300,46 @@ function showDetails(i){
     <h2>${i.issue}</h2>
 
     <div class="meta-row">
+
       <div class="meta-item type">Type: ${i.type}</div>
+
       <div class="meta-item ${
         i.severity==="High"?"sev-high":
         i.severity==="Medium"?"sev-medium":"sev-low"
       }">
         Severity: ${i.severity}
       </div>
-      <div class="meta-item wcag">WCAG: ${i.wcagLevel} | ${i.wcagSC}</div>
+
+      <div class="meta-item wcag">
+        WCAG: ${i.wcagLevel} | ${i.wcagSC}
+      </div>
+
     </div>
 
     <hr>
 
-    <h3>Description</h3>
-    ${formatContent(i.description)}
+    <div class="section">
+      <h3>Description</h3>
+      ${formatContent(i.description)}
+    </div>
 
-    <h3>Rationale</h3>
-    <p>${escapeHTML(i.rationale)}</p>
+    <div class="section">
+      <h3>Rationale</h3>
+      <p>${escapeHTML(i.rationale)}</p>
+    </div>
 
-    <h3>Suggestion</h3>
-    ${formatContent(i.suggestion)}
+    <div class="section">
+      <h3>Suggestion</h3>
+      ${formatContent(i.suggestion)}
+    </div>
   `;
+
+  document.querySelectorAll("pre code").forEach(block=>{
+    hljs.highlightElement(block);
+  });
 }
 
-/* ✅ EXPORT */
+/* EXPORT */
 function exportToExcel(){
 
   let data = filtered.map(i=>({
