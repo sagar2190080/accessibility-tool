@@ -15,6 +15,7 @@
 
 <script>
 
+/* ✅ CLEAN TEXT */
 function cleanText(text){
   if(!text) return "";
 
@@ -26,6 +27,21 @@ function cleanText(text){
     .replace(/\s+/g," ")
     .replace(/[\r\n]+/g," ")
     .trim();
+}
+
+/* ✅ SMART COLUMN FINDER (FINAL FIX) */
+function getValue(row, keyword){
+  let keys = Object.keys(row);
+
+  for(let k of keys){
+    let normalized = k.toLowerCase().trim();
+
+    if(normalized.includes(keyword.toLowerCase())){
+      return row[k];
+    }
+  }
+
+  return "";
 }
 
 document.getElementById("upload").addEventListener("change", function(e){
@@ -43,24 +59,23 @@ document.getElementById("upload").addEventListener("change", function(e){
 
     let cleaned = json.map(r => ({
 
-      issue: cleanText(r["Issue"]),
-      type: cleanText(r["Type of Issue"]),
+      issue: cleanText(getValue(r,"issue")),
+      type: cleanText(getValue(r,"type")),
 
-      description: cleanText(r["Issue Description"]),
-      rationale: cleanText(r["Rationale"]),   // ✅ EXACT MATCH
+      description: cleanText(getValue(r,"description")),
+      rationale: cleanText(getValue(r,"rationale")),
 
-      suggestion: cleanText(r["Suggestion"]),
-      severity: cleanText(r["Severity"]),
+      suggestion: cleanText(getValue(r,"suggestion")),
+      severity: cleanText(getValue(r,"severity")),
 
-      // ✅ FIXED EXACT COLUMN NAMES
-      wcagLevel: cleanText(r["WCAG 2.0 Conformance Level"]),
-      wcagSC: cleanText(r["WCAG 2.0 Success criteria"])
+      wcagLevel: cleanText(getValue(r,"conformance")),
+      wcagSC: cleanText(getValue(r,"criteria"))
 
     }));
 
     localStorage.setItem("repoData", JSON.stringify(cleaned));
 
-    alert("✅ Data imported successfully");
+    alert("✅ Data imported successfully (FINAL FIX APPLIED)");
 
   };
 
