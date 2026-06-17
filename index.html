@@ -5,8 +5,7 @@
 <title>Accessibility Tool</title>
 
 <!-- ✅ Highlight.js CSS -->
-<link rel="stylesheet"
- href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
 
 <style>
 body { font-family: Arial; margin:0; }
@@ -68,13 +67,20 @@ input {
   background:#e6f0ff;
 }
 
-/* ✅ Code block styling */
+/* ✅ code block */
 pre {
   background:#f4f4f4;
   padding:10px;
-  overflow:auto;
-  white-space:pre-wrap;
   border-radius:6px;
+  overflow:auto;
+}
+
+/* ✅ inline code */
+.inline-code {
+  background:#eee;
+  padding:2px 6px;
+  font-family: monospace;
+  border-radius:4px;
 }
 </style>
 
@@ -89,13 +95,11 @@ pre {
 <div class="wrapper">
 
 <div class="left">
-
 <input id="searchBox" placeholder="Search...">
 <div id="suggestions"></div>
 
 <br>
 <div id="resultList"></div>
-
 </div>
 
 <div class="right" id="previewPanel">
@@ -104,7 +108,7 @@ pre {
 
 </div>
 
-<!-- ✅ Highlight.js Script -->
+<!-- ✅ Highlight.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
 <script>
@@ -112,7 +116,7 @@ pre {
 let issues = [];
 let filtered = [];
 
-/* ✅ Escape HTML */
+/* ✅ escape HTML */
 function escapeHTML(text){
   if(!text) return "";
   return text
@@ -121,28 +125,31 @@ function escapeHTML(text){
     .replace(/>/g,"&gt;");
 }
 
-/* ✅ Split content + syntax highlight */
+/* ✅ FINAL SMART FORMAT FUNCTION */
 function formatContent(text){
 
   if(!text) return "";
 
-  let parts = text.split("Code Snippet:");
+  text = escapeHTML(text);
 
-  if(parts.length === 1){
-    return "<p>" + escapeHTML(text) + "</p>";
+  /* ✅ detect full code snippet */
+  if(text.includes("Code Snippet:")){
+    let parts = text.split("Code Snippet:");
+
+    return `
+      <p>${parts[0]}</p>
+      <b>Code Snippet:</b>
+      <pre><code class="language-html">${parts[1]}</code></pre>
+    `;
   }
 
-  let normalText = escapeHTML(parts[0]);
-  let codeText = escapeHTML(parts[1]);
-
-  return `
-    <p>${normalText}</p>
-    <b>Code Snippet:</b>
-    <pre><code class="language-html">${codeText}</code></pre>
-  `;
+  /* ✅ detect inline HTML and highlight inline */
+  return text.replace(/(&lt;[^&]+&gt;)/g, function(match){
+    return `<span class="inline-code">${match}</span>`;
+  });
 }
 
-/* ✅ Load data */
+/* LOAD */
 window.onload = function(){
 
   let saved = localStorage.getItem("repoData");
@@ -159,7 +166,7 @@ window.onload = function(){
   showDetails(filtered[0]);
 };
 
-/* ✅ Search */
+/* SEARCH */
 searchBox.addEventListener("input", function(){
 
   let q = this.value.toLowerCase();
@@ -174,7 +181,7 @@ searchBox.addEventListener("input", function(){
   showSuggestions();
 });
 
-/* ✅ Suggestions */
+/* suggestions */
 function showSuggestions(){
 
   if(!searchBox.value){
@@ -205,7 +212,7 @@ function showSuggestions(){
   suggestions.style.display="block";
 }
 
-/* ✅ List */
+/* list */
 function renderList(){
 
   resultList.innerHTML="";
@@ -222,7 +229,7 @@ function renderList(){
   });
 }
 
-/* ✅ Details panel */
+/* details */
 function showDetails(i){
 
   previewPanel.innerHTML=`
@@ -235,17 +242,17 @@ function showDetails(i){
     <hr>
 
     <h3>Description</h3>
-    ${formatContent(i.description)}
+    <div>${formatContent(i.description)}</div>
 
     <h3>Rationale</h3>
     <p>${escapeHTML(i.rationale)}</p>
 
     <h3>Suggestion</h3>
-    ${formatContent(i.suggestion)}
+    <div>${formatContent(i.suggestion)}</div>
   `;
 
-  /* ✅ APPLY SYNTAX HIGHLIGHT */
-  document.querySelectorAll('pre code').forEach((block) => {
+  /* ✅ apply syntax highlight */
+  document.querySelectorAll("pre code").forEach(block => {
     hljs.highlightElement(block);
   });
 }
