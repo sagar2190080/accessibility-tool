@@ -4,17 +4,17 @@
 <meta charset="UTF-8">
 <title>Accessibility Tool</title>
 
-<!-- Highlight -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
+
+/* BASE */
 body {
   font-family: "Segoe UI";
   margin:0;
-  background:#f4f6f9;
+  background:#f5f7fb;
 }
 
 header {
@@ -22,89 +22,99 @@ header {
   color:white;
   padding:15px;
   font-size:20px;
-  font-weight:bold;
+  font-weight:600;
 }
 
+/* DASHBOARD */
 .dashboard {
   display:flex;
-  gap:10px;
-  padding:10px;
+  gap:15px;
+  padding:15px;
 }
 
 .card-box {
   flex:1;
   background:white;
-  padding:10px;
-  border-radius:8px;
+  padding:15px;
+  border-radius:10px;
   text-align:center;
-  font-weight:bold;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
 }
 
-.high { border-top:4px solid #dc3545; }
-.medium { border-top:4px solid #ffc107; }
-.low { border-top:4px solid #28a745; }
+.card-box span {
+  font-size:20px;
+}
 
-.wrapper { display:flex; height:80vh; }
+.high { border-top:4px solid #e53935; }
+.medium { border-top:4px solid #fbc02d; }
+.low { border-top:4px solid #43a047; }
+
+/* LAYOUT */
+.wrapper { display:flex; height:calc(100vh - 130px); }
 
 .left {
-  width:35%;
+  width:32%;
   background:white;
-  border-right:1px solid #ddd;
+  border-right:1px solid #eee;
   display:flex;
   flex-direction:column;
 }
 
 .right {
-  width:65%;
+  width:68%;
   padding:20px;
   overflow:auto;
 }
 
+/* FILTERS */
 .filters {
-  padding:10px;
-  border-bottom:1px solid #eee;
+  padding:12px;
+  border-bottom:1px solid #f0f0f0;
 }
 
 input, select, button {
   width:100%;
   padding:8px;
-  margin-bottom:6px;
+  margin-bottom:8px;
   border-radius:6px;
+  border:1px solid #ccc;
 }
 
 /* LIST */
 .card {
-  padding:10px;
-  border-bottom:1px solid #eee;
+  padding:12px;
+  border-bottom:1px solid #f1f1f1;
   cursor:pointer;
 }
-.card:hover { background:#f0f4ff; }
+.card:hover { background:#f4f7ff; }
 
 /* META */
 .meta-row {
   display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin:10px 0;
+  gap:8px;
+  margin:12px 0;
 }
 
 .meta-item {
-  padding:6px 12px;
-  border-radius:20px;
-  font-size:13px;
+  padding:5px 10px;
+  border-radius:16px;
+  font-size:12px;
   color:white;
-  font-weight:bold;
 }
 
-.type { background:#007bff; }
-.sev-high { background:#dc3545; }
-.sev-medium { background:#ffc107; color:black; }
-.sev-low { background:#28a745; }
-.wcag { background:#6f42c1; }
+.type { background:#1976d2; }
+.sev-high { background:#e53935; }
+.sev-medium { background:#fbc02d; color:black; }
+.sev-low { background:#43a047; }
+.wcag { background:#6a1b9a; }
 
-/* CODE BLOCK */
+/* SECTION */
+.section { margin-top:20px; }
+
+/* ✅ CLEAN CODE BLOCK */
 .code-wrapper {
   position:relative;
+  margin-top:10px;
 }
 
 .copy-btn {
@@ -112,23 +122,24 @@ input, select, button {
   right:10px;
   top:10px;
   font-size:12px;
-  padding:5px 8px;
+  padding:4px 8px;
   border:none;
-  background:#1f3c88;
+  background:#333;
   color:white;
   border-radius:4px;
   cursor:pointer;
+  opacity:0.8;
 }
 
-.copy-btn:hover {
-  background:#162c66;
-}
+.copy-btn:hover { opacity:1; }
 
 pre {
-  background:#f6f8fa;
+  background:#fafbfc;
+  border:1px solid #e1e4e8;
   padding:12px;
-  border-radius:8px;
+  border-radius:6px;
   overflow:auto;
+  font-size:13px;
 }
 
 </style>
@@ -140,10 +151,10 @@ pre {
 <header>Accessibility Tool</header>
 
 <div class="dashboard">
-  <div class="card-box">Total<br><span id="totalCount">0</span></div>
-  <div class="card-box high">High<br><span id="highCount">0</span></div>
-  <div class="card-box medium">Medium<br><span id="mediumCount">0</span></div>
-  <div class="card-box low">Low<br><span id="lowCount">0</span></div>
+  <div class="card-box">Total<br><span id="totalCount"></span></div>
+  <div class="card-box high">High<br><span id="highCount"></span></div>
+  <div class="card-box medium">Medium<br><span id="mediumCount"></span></div>
+  <div class="card-box low">Low<br><span id="lowCount"></span></div>
 </div>
 
 <div class="wrapper">
@@ -155,16 +166,14 @@ pre {
 <select id="typeFilter"><option value="">All Types</option></select>
 <select id="severityFilter"><option value="">All Severity</option></select>
 <select id="wcagFilter"><option value="">All WCAG</option></select>
-<button onclick="exportToExcel()">⬇ Export Filtered Data</button>
+<button onclick="exportToExcel()">⬇ Export</button>
 </div>
 
 <div id="resultList"></div>
 
 </div>
 
-<div class="right" id="previewPanel">
-<h3>Select an issue</h3>
-</div>
+<div class="right" id="previewPanel"></div>
 
 </div>
 
@@ -178,22 +187,20 @@ function escapeHTML(text){
   return text?.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") || "";
 }
 
-/* ✅ COPY FUNCTION */
+/* COPY */
 function copyCode(btn){
   let code = btn.nextElementSibling.innerText;
   navigator.clipboard.writeText(code);
-
-  btn.innerText = "Copied ✅";
-  setTimeout(()=> btn.innerText="Copy", 1200);
+  btn.innerText="Copied";
+  setTimeout(()=>btn.innerText="Copy",1000);
 }
 
-/* ✅ FORMAT CONTENT WITH COPY BUTTON */
+/* ✅ FIXED CLEAN FORMAT */
 function formatContent(text){
 
   if(!text) return "<p>-</p>";
 
   let escaped = escapeHTML(text);
-
   let htmlStart = escaped.search(/&lt;[a-zA-Z]/);
 
   if(htmlStart !== -1){
@@ -203,10 +210,9 @@ function formatContent(text){
 
     return `
       ${textPart ? `<p>${textPart.trim()}</p>` : ""}
-
       <div class="code-wrapper">
         <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-        <pre><code class="language-html">${codePart.trim()}</code></pre>
+        <pre><code class="language-html">${codePart}</code></pre>
       </div>
     `;
   }
@@ -218,9 +224,8 @@ function formatContent(text){
 window.onload = function(){
 
   let data = localStorage.getItem("repoData");
-
   if(!data){
-    previewPanel.innerHTML="<h3>Please import Excel first</h3>";
+    previewPanel.innerHTML="<h3>Import data first</h3>";
     return;
   }
 
@@ -233,7 +238,6 @@ window.onload = function(){
 
 /* DASHBOARD */
 function updateDashboard(){
-
   totalCount.innerText = issues.length;
   highCount.innerText = issues.filter(i=>i.severity==="High").length;
   mediumCount.innerText = issues.filter(i=>i.severity==="Medium").length;
@@ -256,7 +260,7 @@ function populateFilters(){
   });
 }
 
-/* APPLY FILTERS */
+/* APPLY */
 function applyFilters(){
 
   let q = searchBox.value.toLowerCase();
@@ -264,40 +268,31 @@ function applyFilters(){
   let s = severityFilter.value;
   let w = wcagFilter.value;
 
-  filtered = issues.filter(i => {
-
-    let txt = (i.issue + i.description + i.rationale + i.suggestion).toLowerCase();
-
+  filtered = issues.filter(i=>{
+    let txt = (i.issue+i.description+i.rationale+i.suggestion).toLowerCase();
     return txt.includes(q) &&
-      (!t || i.type===t) &&
-      (!s || i.severity===s) &&
-      (!w || i.wcagLevel===w);
+      (!t||i.type===t) &&
+      (!s||i.severity===s) &&
+      (!w||i.wcagLevel===w);
   });
 
   renderList();
-
   if(filtered.length) showDetails(filtered[0]);
 }
 
-/* EVENTS */
-searchBox.oninput = applyFilters;
-typeFilter.onchange = applyFilters;
-severityFilter.onchange = applyFilters;
-wcagFilter.onchange = applyFilters;
+searchBox.oninput=applyFilters;
+typeFilter.onchange=applyFilters;
+severityFilter.onchange=applyFilters;
+wcagFilter.onchange=applyFilters;
 
 /* LIST */
 function renderList(){
-
   resultList.innerHTML="";
-
-  filtered.forEach(i => {
-
+  filtered.forEach(i=>{
     let d=document.createElement("div");
     d.className="card";
     d.innerHTML="<b>"+i.issue+"</b>";
-
     d.onclick=()=>showDetails(i);
-
     resultList.appendChild(d);
   });
 }
@@ -309,28 +304,29 @@ function showDetails(i){
     <h2>${i.issue}</h2>
 
     <div class="meta-row">
-      <div class="meta-item type">Type: ${i.type}</div>
+      <div class="meta-item type">${i.type}</div>
       <div class="meta-item ${
         i.severity==="High"?"sev-high":
-        i.severity==="Medium"?"sev-medium":"sev-low"
-      }">
-        Severity: ${i.severity}
+        i.severity==="Medium"?"sev-medium":"sev-low"}">
+        ${i.severity}
       </div>
-      <div class="meta-item wcag">
-        WCAG: ${i.wcagLevel} | ${i.wcagSC}
-      </div>
+      <div class="meta-item wcag">${i.wcagLevel} | ${i.wcagSC}</div>
     </div>
 
-    <hr>
+    <div class="section">
+      <h3>Description</h3>
+      ${formatContent(i.description)}
+    </div>
 
-    <h3>Description</h3>
-    ${formatContent(i.description)}
+    <div class="section">
+      <h3>Rationale</h3>
+      <p>${escapeHTML(i.rationale)}</p>
+    </div>
 
-    <h3>Rationale</h3>
-    <p>${escapeHTML(i.rationale)}</p>
-
-    <h3>Suggestion</h3>
-    ${formatContent(i.suggestion)}
+    <div class="section">
+      <h3>Suggestion</h3>
+      ${formatContent(i.suggestion)}
+    </div>
   `;
 
   document.querySelectorAll("pre code").forEach(block=>{
@@ -340,20 +336,10 @@ function showDetails(i){
 
 /* EXPORT */
 function exportToExcel(){
-
-  let data = filtered.map(i=>({
-    Issue:i.issue,
-    Type:i.type,
-    Severity:i.severity,
-    WCAG_Level:i.wcagLevel,
-    WCAG_SC:i.wcagSC
-  }));
-
-  let ws = XLSX.utils.json_to_sheet(data);
+  let ws = XLSX.utils.json_to_sheet(filtered);
   let wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Issues");
-
-  XLSX.writeFile(wb, "Filtered_Issues.xlsx");
+  XLSX.utils.book_append_sheet(wb, ws, "Data");
+  XLSX.writeFile(wb,"data.xlsx");
 }
 
 </script>
