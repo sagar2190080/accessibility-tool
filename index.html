@@ -32,13 +32,11 @@ header {
   overflow:auto;
 }
 
-/* search */
 input {
   width:100%;
   padding:8px;
 }
 
-/* suggestions */
 #suggestions {
   position:absolute;
   background:white;
@@ -58,7 +56,6 @@ input {
   background:#e6f0ff;
 }
 
-/* list */
 .card {
   padding:10px;
   border-bottom:1px solid #ccc;
@@ -82,6 +79,7 @@ input {
 <div class="left">
 
 <input id="searchBox" placeholder="Search..." autocomplete="off">
+
 <div id="suggestions"></div>
 
 <br>
@@ -101,27 +99,13 @@ input {
 let issues = [];
 let filtered = [];
 
-/* ✅ AUTO CLEAN FUNCTION */
-function cleanText(text){
-  if(!text) return "";
-
-  return text
-    .replace(/□/g, "'")
-    .replace(/\(\.\.\.\)/g, "")
-    .replace(/\.{2,}/g, "")
-    .replace(/;/g, "")
-    .replace(/\s+/g, " ")
-    .replace(/[\r\n]+/g, " ")
-    .trim();
-}
-
-/* ✅ LOAD DATA */
+/* ✅ LOAD */
 window.onload = function(){
 
   let saved = localStorage.getItem("repoData");
 
   if(!saved){
-    previewPanel.innerHTML = "<h3>Please upload Excel first</h3>";
+    previewPanel.innerHTML = "<h3>Please import Excel first</h3>";
     return;
   }
 
@@ -129,34 +113,32 @@ window.onload = function(){
   filtered = issues;
 
   renderList();
-
-  if(filtered.length){
-    showDetails(filtered[0]);
-  }
+  showDetails(filtered[0]);
 };
 
 /* ✅ SEARCH */
 searchBox.addEventListener("input", function(){
 
-  let q = this.value.toLowerCase().trim();
+  let q = this.value.toLowerCase();
 
   filtered = issues.filter(i =>
-    JSON.stringify(i).toLowerCase().includes(q)
+    (i.issue + " " + i.description + " " + i.suggestion)
+    .toLowerCase()
+    .includes(q)
   );
 
   renderList();
   showSuggestions();
 });
 
-/* ✅ SUGGESTIONS (SAME AS LEFT PANEL) */
+/* ✅ SUGGESTIONS (MATCH FILTERED LIST) */
 function showSuggestions(){
 
   let box = document.getElementById("suggestions");
-
-  let q = searchBox.value.trim();
+  let q = searchBox.value;
 
   if(!q){
-    box.style.display="none";
+    box.style.display = "none";
     return;
   }
 
@@ -167,16 +149,13 @@ function showSuggestions(){
     let div = document.createElement("div");
     div.className="suggestion-item";
 
-    let text = i["Issue"] || i.issue || "No title";
-
-    div.innerText = text;
+    div.innerText = i.issue;
 
     div.onclick = function(){
-
-      searchBox.value = text;
+      searchBox.value = i.issue;
       box.style.display="none";
 
-      filtered = [i];
+      filtered=[i];
       renderList();
       showDetails(i);
     };
@@ -197,9 +176,9 @@ function renderList(){
     let div=document.createElement("div");
     div.className="card";
 
-    div.innerHTML = "<b>" + (i["Issue"] || i.issue || "No title") + "</b>";
+    div.innerHTML = "<b>" + i.issue + "</b>";
 
-    div.onclick = ()=> showDetails(i);
+    div.onclick = () => showDetails(i);
 
     resultList.appendChild(div);
   });
@@ -208,36 +187,20 @@ function renderList(){
 /* ✅ DETAILS PANEL */
 function showDetails(i){
 
-  let issue = i["Issue"] || i.issue || "-";
-  let type = i["Type of Issue"] || i.type || "-";
-  let severity = i["Severity"] || i.severity || "-";
-
-  let wcagLevel = i["wcagLevel"] || "-";
-  let wcagSC = i["wcagSC"] || "-";
-
-  let rawDesc =
-    (i["Issue Description"] || i.description || "") + " " +
-    (i["Rationale"] || i.rationale || "");
-
-  let rawSug = i["Suggestion"] || i.suggestion || "";
-
-  let description = cleanText(rawDesc);
-  let suggestion = cleanText(rawSug);
-
   previewPanel.innerHTML = `
-    <h2>${issue}</h2>
+    <h2>${i.issue}</h2>
 
-    <p><b>Type:</b> ${type}</p>
-    <p><b>Severity:</b> ${severity}</p>
-    <p><b>WCAG:</b> ${wcagLevel} | ${wcagSC}</p>
+    <p><b>Type:</b> ${i.type || "-"}</p>
+    <p><b>Severity:</b> ${i.severity || "-"}</p>
+    <p><b>WCAG:</b> ${i.wcagLevel || "-"} | ${i.wcagSC || "-"}</p>
 
     <hr>
 
     <h3>Description</h3>
-    <p>${description}</p>
+    <p>${i.description} ${i.rationale}</p>
 
     <h3>Suggestion</h3>
-    <p>${suggestion}</p>
+    <p>${i.suggestion}</p>
   `;
 }
 
