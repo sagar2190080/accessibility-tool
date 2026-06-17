@@ -4,127 +4,131 @@
 <meta charset="UTF-8">
 <title>Accessibility Tool</title>
 
-https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css
-https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
 <style>
-
-/* BASE */
 body {
-  font-family: "Segoe UI";
   margin:0;
-  background:#f5f7fb;
+  font-family: Arial;
+  background:#f5f5f5;
 }
 
-header {
-  background:#1f3c88;
+/* BLUE HEADER */
+.detail-header {
+  background:#2f56d3;
   color:white;
-  padding:12px 15px;
-  font-size:18px;
-}
-
-/* ✅ COMPACT DASHBOARD */
-.dashboard {
+  padding:10px;
   display:flex;
-  gap:10px;
-  padding:10px 15px;
-}
-
-.card-box {
-  flex:1;
-  background:white;
-  padding:8px 10px;
-  border-radius:6px;
-  text-align:center;
-  box-shadow:0 1px 3px rgba(0,0,0,0.08);
-  font-size:13px;
-}
-
-.card-box span {
-  font-size:16px;
+  justify-content:space-between;
   font-weight:bold;
 }
 
-.high { border-top:3px solid #e53935; }
-.medium { border-top:3px solid #fbc02d; }
-.low { border-top:3px solid #43a047; }
-
-/* LAYOUT */
+/* MAIN LAYOUT */
 .wrapper {
   display:flex;
-  height:calc(100vh - 110px);
+  height:95vh;
 }
 
 .left {
-  width:32%;
+  width:30%;
   background:white;
-  border-right:1px solid #eee;
-  display:flex;
-  flex-direction:column;
+  border-right:1px solid #ccc;
+  overflow:auto;
 }
 
 .right {
-  width:68%;
-  padding:18px;
-  overflow:auto;
+  width:70%;
+  background:white;
 }
 
-/* FILTERS */
-.filters {
-  padding:10px;
-  border-bottom:1px solid #f0f0f0;
-}
-
-input, select, button {
-  width:100%;
-  padding:7px;
-  margin-bottom:6px;
-  border-radius:5px;
-  border:1px solid #ccc;
-  font-size:13px;
-}
-
-/* LIST */
+/* ISSUE LIST */
 .card {
   padding:10px;
-  border-bottom:1px solid #f1f1f1;
+  border-bottom:1px solid #eee;
   cursor:pointer;
 }
-.card:hover { background:#f4f7ff; }
+.card:hover {
+  background:#f0f4ff;
+}
 
-/* META */
-.meta-row {
+/* TITLE */
+.issue-title {
+  font-size:20px;
+  font-weight:bold;
+  padding:15px;
+}
+
+/* TABS */
+.tabs {
   display:flex;
-  gap:6px;
-  margin:10px 0;
+  border-bottom:1px solid #ccc;
 }
 
-.meta-item {
-  padding:4px 8px;
-  border-radius:14px;
-  font-size:11px;
-  color:white;
+.tab {
+  padding:10px 15px;
+  border-right:1px solid #ddd;
+  cursor:pointer;
+  background:#eee;
+  font-size:14px;
 }
 
-.type { background:#1976d2; }
-.sev-high { background:#e53935; }
-.sev-medium { background:#fbc02d; color:black; }
-.sev-low { background:#43a047; }
-.wcag { background:#6a1b9a; }
+.tab.active {
+  background:white;
+  border-bottom:3px solid #2f56d3;
+  font-weight:bold;
+}
 
-/* SECTION */
-.section { margin-top:16px; }
+/* BODY */
+.detail-body {
+  display:flex;
+}
 
-/* ✅ CLEAN CODE BLOCK (NO COPY BUTTON) */
-pre {
-  background:#fafbfc;
-  border:1px solid #e1e4e8;
+/* CONTENT */
+.content {
+  width:75%;
+  padding:15px;
+  line-height:1.6;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width:25%;
+  border-left:1px solid #ddd;
   padding:10px;
-  border-radius:6px;
-  font-size:12px;
-  margin-top:8px;
+}
+
+/* SCORE BOX */
+.score-box {
+  border:1px solid #ccc;
+  margin-bottom:10px;
+  text-align:center;
+}
+
+.score-box h4 {
+  margin:0;
+  padding:6px;
+  background:#f2f2f2;
+}
+
+.score-big {
+  font-size:36px;
+  padding:20px;
+}
+
+.sev-high {background:#ff6b2d; color:white;}
+.sev-medium {background:#ffc107;}
+.sev-low {background:#4caf50; color:white;}
+
+.score-small {
+  font-size:26px;
+  padding:15px;
+}
+
+/* CODE */
+pre {
+  background:#fafafa;
+  border:1px solid #ccc;
+  padding:10px;
   overflow:auto;
+  margin-top:10px;
 }
 
 </style>
@@ -132,185 +136,152 @@ pre {
 
 <body>
 
-<header>Accessibility Tool</header>
-
-<div class="dashboard">
-  <div class="card-box">
-    Total<br><span id="totalCount"></span>
-  </div>
-  <div class="card-box high">
-    High<br><span id="highCount"></span>
-  </div>
-  <div class="card-box medium">
-    Medium<br><span id="mediumCount"></span>
-  </div>
-  <div class="card-box low">
-    Low<br><span id="lowCount"></span>
-  </div>
-</div>
-
 <div class="wrapper">
 
-<div class="left">
+<!-- LEFT PANEL -->
+<div class="left" id="resultList"></div>
 
-<div class="filters">
-<input id="searchBox" placeholder="Search...">
-<select id="typeFilter"><option value="">All Types</option></select>
-<select id="severityFilter"><option value="">All Severity</option></select>
-<select id="wcagFilter"><option value="">All WCAG</option></select>
-<button onclick="exportToExcel()">⬇ Export</button>
+<!-- RIGHT PANEL -->
+<div class="right" id="previewPanel">
+  <h3 style="padding:15px;">Select an issue</h3>
 </div>
-
-<div id="resultList"></div>
-
-</div>
-
-<div class="right" id="previewPanel"></div>
 
 </div>
 
 <script>
 
 let issues = [];
-let filtered = [];
+let current = {};
 
-function escapeHTML(text){
-  return text?.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") || "";
-}
-
-/* ✅ CLEAN FORMAT (NO COPY BUTTON) */
-function formatContent(text){
-
-  if(!text) return "<p>-</p>";
-
-  let escaped = escapeHTML(text);
-  let htmlStart = escaped.search(/&lt;[a-zA-Z]/);
-
-  if(htmlStart !== -1){
-    let textPart = escaped.substring(0, htmlStart);
-    let codePart = escaped.substring(htmlStart);
-
-    return `
-      ${textPart ? `<p>${textPart.trim()}</p>` : ""}
-      <pre><code class="language-html">${codePart}</code></pre>
-    `;
-  }
-
-  return `<p>${escaped}</p>`;
-}
-
+/* LOAD */
 window.onload = function(){
 
   let data = localStorage.getItem("repoData");
-  if(!data){
-    previewPanel.innerHTML="<h3>Import data first</h3>";
-    return;
-  }
+  if(!data) return;
 
   issues = JSON.parse(data);
-
-  populateFilters();
-  applyFilters();
-  updateDashboard();
-}
-
-function updateDashboard(){
-  totalCount.innerText = issues.length;
-  highCount.innerText = issues.filter(i=>i.severity==="High").length;
-  mediumCount.innerText = issues.filter(i=>i.severity==="Medium").length;
-  lowCount.innerText = issues.filter(i=>i.severity==="Low").length;
-}
-
-function populateFilters(){
-
-  [...new Set(issues.map(i=>i.type))].forEach(v=>{
-    if(v) typeFilter.innerHTML += `<option>${v}</option>`;
-  });
-
-  [...new Set(issues.map(i=>i.severity))].forEach(v=>{
-    if(v) severityFilter.innerHTML += `<option>${v}</option>`;
-  });
-
-  [...new Set(issues.map(i=>i.wcagLevel))].forEach(v=>{
-    if(v) wcagFilter.innerHTML += `<option>${v}</option>`;
-  });
-}
-
-function applyFilters(){
-
-  let q = searchBox.value.toLowerCase();
-  let t = typeFilter.value;
-  let s = severityFilter.value;
-  let w = wcagFilter.value;
-
-  filtered = issues.filter(i=>{
-    let txt = (i.issue+i.description+i.rationale+i.suggestion).toLowerCase();
-
-    return txt.includes(q) &&
-      (!t||i.type===t) &&
-      (!s||i.severity===s) &&
-      (!w||i.wcagLevel===w);
-  });
-
   renderList();
-  if(filtered.length) showDetails(filtered[0]);
-}
+};
 
-searchBox.oninput=applyFilters;
-typeFilter.onchange=applyFilters;
-severityFilter.onchange=applyFilters;
-wcagFilter.onchange=applyFilters;
-
+/* LIST */
 function renderList(){
+
   resultList.innerHTML="";
-  filtered.forEach(i=>{
-    let d=document.createElement("div");
-    d.className="card";
-    d.innerHTML="<b>"+i.issue+"</b>";
-    d.onclick=()=>showDetails(i);
-    resultList.appendChild(d);
+
+  issues.forEach(i=>{
+
+    let div=document.createElement("div");
+    div.className="card";
+    div.innerText=i.issue;
+
+    div.onclick=()=>showDetails(i);
+
+    resultList.appendChild(div);
   });
 }
 
+/* TAB SWITCH */
+function switchTab(type){
+
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+
+  document.getElementById(type).classList.add("active");
+
+  let content = "";
+
+  if(type==="descriptionTab") content = formatContent(current.description);
+  if(type==="examplesTab") content = "<p>No examples available</p>";
+  if(type==="recommendationsTab") content = formatContent(current.suggestion);
+  if(type==="modulesTab") content = "<p>-</p>";
+  if(type==="standardsTab") content = "<p>-</p>";
+  if(type==="testsTab") content = "<p>-</p>";
+
+  document.getElementById("contentArea").innerHTML = content;
+}
+
+/* SHOW DETAILS */
 function showDetails(i){
 
+  current = i;
+
   previewPanel.innerHTML=`
-    <h2>${i.issue}</h2>
 
-    <div class="meta-row">
-      <div class="meta-item type">${i.type}</div>
-      <div class="meta-item ${
-        i.severity==="High"?"sev-high":
-        i.severity==="Medium"?"sev-medium":"sev-low"}">${i.severity}</div>
-      <div class="meta-item wcag">${i.wcagLevel} | ${i.wcagSC}</div>
-    </div>
+  <!-- HEADER -->
+  <div class="detail-header">
+    <div>View Best Practice</div>
+    <div style="cursor:pointer" onclick="previewPanel.innerHTML=''">✖</div>
+  </div>
 
-    <div class="section">
-      <h3>Description</h3>
+  <!-- TITLE -->
+  <div class="issue-title">${i.issue}</div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" id="descriptionTab" onclick="switchTab('descriptionTab')">Description</div>
+    <div class="tab" id="examplesTab" onclick="switchTab('examplesTab')">Examples</div>
+    <div class="tab" id="recommendationsTab" onclick="switchTab('recommendationsTab')">Recommendations</div>
+    <div class="tab" id="modulesTab" onclick="switchTab('modulesTab')">Modules</div>
+    <div class="tab" id="standardsTab" onclick="switchTab('standardsTab')">Standards</div>
+    <div class="tab" id="testsTab" onclick="switchTab('testsTab')">Tests</div>
+  </div>
+
+  <!-- BODY -->
+  <div class="detail-body">
+
+    <!-- LEFT CONTENT -->
+    <div class="content" id="contentArea">
       ${formatContent(i.description)}
     </div>
 
-    <div class="section">
-      <h3>Rationale</h3>
-      <p>${escapeHTML(i.rationale)}</p>
+    <!-- RIGHT SIDEBAR -->
+    <div class="sidebar">
+
+      <div class="score-box">
+        <h4>Severity</h4>
+        <div class="score-big ${
+          i.severity==="High"?"sev-high":
+          i.severity==="Medium"?"sev-medium":"sev-low"
+        }">
+          ${i.severity}
+        </div>
+      </div>
+
+      <div class="score-box">
+        <h4>Noticeability</h4>
+        <div class="score-small">7</div>
+      </div>
+
+      <div class="score-box">
+        <h4>Tractability</h4>
+        <div class="score-small">4</div>
+      </div>
+
     </div>
 
-    <div class="section">
-      <h3>Suggestion</h3>
-      ${formatContent(i.suggestion)}
-    </div>
+  </div>
   `;
-
-  document.querySelectorAll("pre code").forEach(block=>{
-    hljs.highlightElement(block);
-  });
 }
 
-function exportToExcel(){
-  let ws = XLSX.utils.json_to_sheet(filtered);
-  let wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Data");
-  XLSX.writeFile(wb,"data.xlsx");
+/* FORMAT */
+function formatContent(text){
+
+  if(!text) return "";
+
+  let escaped = text
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
+
+  let pos = escaped.search(/&lt;/);
+
+  if(pos!==-1){
+
+    let t = escaped.substring(0,pos);
+    let c = escaped.substring(pos);
+
+    return `<p>${t}</p><pre>${c}</pre>`;
+  }
+
+  return `<p>${escaped}</p>`;
 }
 
 </script>
