@@ -3,55 +3,60 @@
 <head>
 <meta charset="UTF-8">
 <title>Import Excel</title>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
 </head>
 
 <body>
 
 <h2>Upload Excel File</h2>
 
-<input type="file" id="upload" accept=".xlsx">
+<input type="file" id="upload">
 
 <script>
 
+function cleanText(text){
+  if(!text) return "";
+  return text
+    .replace(/□/g,"'")
+    .replace(/\(\.\.\.\)/g,"")
+    .replace(/\.{2,}/g,"")
+    .replace(/;/g,"")
+    .replace(/\s+/g," ")
+    .replace(/[\r\n]+/g," ")
+    .trim();
+}
+
 document.getElementById("upload").addEventListener("change", function(e){
 
-  const file = e.target.files[0];
-
-  const reader = new FileReader();
+  let file = e.target.files[0];
+  let reader = new FileReader();
 
   reader.onload = function(evt){
 
-    const data = new Uint8Array(evt.target.result);
-    const wb = XLSX.read(data, { type: "array" });
-    const ws = wb.Sheets[wb.SheetNames[0]];
+    let data = new Uint8Array(evt.target.result);
+    let wb = XLSX.read(data, {type:"array"});
+    let ws = wb.Sheets[wb.SheetNames[0]];
 
-    // ✅ CRITICAL FIX: use header names
-    const json = XLSX.utils.sheet_to_json(ws);
+    let json = XLSX.utils.sheet_to_json(ws);
 
-    let clean = [];
+    let cleaned = json.map(r => ({
 
-    json.forEach(r => {
+      issue: cleanText(r["Issue"]),
+      type: cleanText(r["Type of Issue"]),
+      description: cleanText(r["Issue Description"]),
+      rationale: cleanText(r["Rationale"]),
+      suggestion: cleanText(r["Suggestion"]),
+      severity: cleanText(r["Severity"]),
+      wcagLevel: cleanText(r["WCAG Level"] || r["WCAG 2.0 Conformance Level"]),
+      wcagSC: cleanText(r["WCAG SC"] || r["WCAG 2.0"])
 
-      // ✅ skip junk rows
-      if(!r["Issue"] || r["Issue"].length < 5) return;
+    }));
 
-      clean.push({
-        "Type of Issue": r["Type of Issue"] || "",
-        "Issue": r["Issue"] || "",
-        "Issue Description": r["Issue Description"] || "",
-        "Rationale": r["Rationale"] || "",
-        "Suggestion": r["Suggestion"] || "",
-        "Severity": r["Severity"] || "",
-        "WCAG 2.0 Conformance Level": r["WCAG 2.0 Conformance Level"] || "",
-        "WCAG 2.0": r["WCAG 2.0"] || ""
-      });
+    localStorage.setItem("repoData", JSON.stringify(cleaned));
 
-    });
-
-    localStorage.setItem("repoData", JSON.stringify(clean));
-
-    alert("✅ Clean data ready!");
+    alert("✅ Data imported successfully");
 
   };
 
