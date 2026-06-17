@@ -4,25 +4,30 @@
 <meta charset="UTF-8">
 <title>Accessibility Tool</title>
 
+<!-- Highlight.js -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
 <style>
 
+/* ✅ BASE */
 body{
   margin:0;
-  font-family:Arial;
-  background:#f2f2f2;
+  font-family:"Segoe UI", Arial;
+  background:#eef1f5;
 }
 
-/* MAIN */
+/* LAYOUT */
 .wrapper{
   display:flex;
   height:100vh;
 }
 
-/* LEFT LIST */
+/* LEFT PANEL */
 .left{
-  width:30%;
-  background:white;
-  border-right:1px solid #ccc;
+  width:28%;
+  background:#ffffff;
+  border-right:1px solid #ddd;
   overflow:auto;
 }
 
@@ -30,34 +35,40 @@ body{
   padding:12px;
   border-bottom:1px solid #eee;
   cursor:pointer;
+  font-size:14px;
+  transition:0.2s;
 }
 .card:hover{
-  background:#f5f5f5;
+  background:#f4f7ff;
 }
 
 /* RIGHT PANEL */
 .right{
-  width:70%;
+  width:72%;
+  background:#fff;
   display:flex;
   flex-direction:column;
-  background:white;
 }
 
 /* TITLE */
 .title{
   font-size:20px;
-  font-weight:bold;
+  font-weight:600;
   padding:15px;
+  border-bottom:1px solid #eee;
 }
 
-/* ✅ TAB + SEVERITY ROW (IMPORTANT CHANGE) */
+/* ✅ TAB + SEVERITY BAR */
 .tab-row{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  border-bottom:1px solid #ccc;
-  background:#eee;
-  padding-left:10px;
+  position:sticky;
+  top:0;
+  background:#fafafa;
+  border-bottom:1px solid #ddd;
+  padding:0 10px;
+  z-index:10;
 }
 
 /* TABS */
@@ -66,58 +77,77 @@ body{
 }
 
 .tab{
-  padding:10px 15px;
-  border:1px solid #ccc;
-  border-bottom:none;
-  margin-right:5px;
-  background:#e5e5e5;
+  padding:10px 14px;
   cursor:pointer;
+  font-size:14px;
+  border-bottom:3px solid transparent;
+  transition:0.2s;
+}
+
+.tab:hover{
+  background:#f3f5f9;
 }
 
 .tab.active{
+  border-bottom:3px solid #2f56d3;
+  font-weight:600;
   background:white;
-  border-top:3px solid #2f56d3;
-  font-weight:bold;
 }
 
-/* ✅ INLINE SEVERITY (NEW POSITION) */
+/* ✅ SEVERITY BADGE */
 .severity-box{
-  margin-right:15px;
-  border:1px solid #ccc;
-  text-align:center;
-  min-width:120px;
+  padding:5px 10px;
+  border-radius:4px;
+  font-size:13px;
+  font-weight:600;
 }
 
-.sev-header{
-  background:#f2f2f2;
-  font-size:12px;
-  padding:5px;
-}
-
-.sev-value{
-  padding:8px;
-  font-size:16px;
-}
-
-/* COLORS */
 .high{background:#ff6a00;color:white;}
-.medium{background:#ffc107;}
+.medium{background:#ffc107;color:black;}
 .low{background:#4caf50;color:white;}
 
-/* CONTENT */
+/* ✅ CONTENT */
 .content{
-  padding:15px;
+  padding:18px;
+  overflow:auto;
   line-height:1.6;
   font-size:14px;
 }
 
-/* CODE */
+/* TEXT */
+.content p{
+  margin-bottom:12px;
+}
+
+/* LIST */
+.content ul{
+  padding-left:20px;
+}
+
+/* ✅ CODE BLOCK */
 pre{
-  background:#fafafa;
-  border:1px solid #ccc;
-  padding:10px;
-  margin-top:10px;
+  background:#f8f9fa;
+  border:1px solid #dcdcdc;
+  border-radius:6px;
+  padding:12px;
   overflow:auto;
+  box-shadow:0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* LINE NUMBERS */
+.code-line{
+  display:block;
+  padding-left:40px;
+  position:relative;
+}
+
+.code-line::before{
+  position:absolute;
+  left:10px;
+  color:#999;
+  font-size:11px;
+  counter-increment:line;
+  content:counter(line);
 }
 
 </style>
@@ -149,7 +179,7 @@ window.onload=function(){
 
   issues=JSON.parse(data);
   renderList();
-};
+}
 
 /* LIST */
 function renderList(){
@@ -157,18 +187,15 @@ function renderList(){
   resultList.innerHTML="";
 
   issues.forEach(i=>{
-
     let div=document.createElement("div");
     div.className="card";
     div.innerText=i.issue;
-
     div.onclick=()=>showDetails(i);
-
     resultList.appendChild(div);
   });
 }
 
-/* TAB SWITCH */
+/* SWITCH TAB */
 function switchTab(tab){
 
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
@@ -177,9 +204,14 @@ function switchTab(tab){
   let content="";
 
   if(tab==="t1") content=format(current.description);
-  if(tab==="t2") content=format(current.suggestion);
+  if(tab==="t2") content=format(current.rationale);
+  if(tab==="t3") content=format(current.suggestion);
 
-  document.getElementById("contentArea").innerHTML=content;
+  contentArea.innerHTML=content;
+
+  document.querySelectorAll("pre code").forEach(b=>{
+    hljs.highlightElement(b);
+  });
 }
 
 /* SHOW DETAILS */
@@ -188,53 +220,70 @@ function showDetails(i){
   current=i;
 
   previewPanel.innerHTML=`
+    <div class="title">${i.issue}</div>
 
-  <div class="title">${i.issue}</div>
+    <div class="tab-row">
 
-  <!-- ✅ TAB + SEVERITY SAME ROW -->
-  <div class="tab-row">
+      <div class="tabs">
+        <div class="tab active" id="t1" onclick="switchTab('t1')">Description</div>
+        <div class="tab" id="t2" onclick="switchTab('t2')">User Impact</div>
+        <div class="tab" id="t3" onclick="switchTab('t3')">Recommendations</div>
+      </div>
 
-    <div class="tabs">
-      <div class="tab active" id="t1" onclick="switchTab('t1')">Description</div>
-      <div class="tab" id="t2" onclick="switchTab('t2')">Recommendations</div>
-    </div>
-
-    <!-- ✅ SEVERITY INSIDE TAB PANEL -->
-    <div class="severity-box">
-      <div class="sev-header">Severity</div>
-      <div class="sev-value ${
+      <div class="severity-box ${
         i.severity==="High"?"high":
         i.severity==="Medium"?"medium":"low"
       }">
         ${i.severity}
       </div>
+
     </div>
 
-  </div>
-
-  <!-- CONTENT -->
-  <div class="content" id="contentArea">
-    ${format(i.description)}
-  </div>
+    <div class="content" id="contentArea">
+      ${format(i.description)}
+    </div>
   `;
+
+  document.querySelectorAll("pre code").forEach(b=>{
+    hljs.highlightElement(b);
+  });
 }
 
-/* FORMAT */
+/* ✅ PREMIUM FORMATTER */
 function format(text){
 
-  if(!text) return "";
+  if(!text) return "<p>-</p>";
 
-  let escaped=text.replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  let pos=escaped.search(/&lt;/);
-
-  if(pos!=-1){
-    let t=escaped.substring(0,pos);
-    let c=escaped.substring(pos);
-
-    return `<p>${t}</p><pre>${c}</pre>`;
+  if(/Code Snippet:/i.test(text)){
+    let parts=text.split(/Code Snippet:/i);
+    return `<p>${parts[0]}</p><pre><code>${escapeHTML(parts[1])}</code></pre>`;
   }
 
-  return `<p>${escaped}</p>`;
+  if(/<[^>]+>/.test(text)){
+    let pos=text.search(/<[^>]+>/);
+    let txt=text.substring(0,pos);
+    let code=text.substring(pos);
+    return `<p>${txt}</p><pre><code>${escapeHTML(code)}</code></pre>`;
+  }
+
+  return formatTextOnly(text);
+}
+
+/* TEXT FORMAT */
+function formatTextOnly(text){
+
+  let lines=text.split("\n").map(l=>l.trim()).filter(l=>l);
+
+  if(lines.every(l=>l.startsWith("•")||l.startsWith("-"))){
+    return `<ul>${lines.map(l=>`<li>${l.replace(/^[-•]\s*/,"")}</li>`).join("")}</ul>`;
+  }
+
+  return `<p>${lines.join(" ")}</p>`;
+}
+
+/* ESCAPE */
+function escapeHTML(str){
+  return str.replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
 </script>
