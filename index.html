@@ -64,9 +64,13 @@ input {
   background:#e6f0ff;
 }
 
-pre {
+/* ✅ CODE BLOCK STYLE */
+.code-block {
   background:#f4f4f4;
   padding:10px;
+  margin-top:5px;
+  font-family: monospace;
+  overflow:auto;
   white-space:pre-wrap;
 }
 </style>
@@ -100,17 +104,34 @@ pre {
 let issues = [];
 let filtered = [];
 
-/* ✅ ESCAPE HTML (CRITICAL FIX) */
+/* ✅ ESCAPE HTML */
 function escapeHTML(text){
-
   if(!text) return "";
-
   return text
     .replace(/&/g,"&amp;")
     .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#039;");
+    .replace(/>/g,"&gt;");
+}
+
+/* ✅ SPLIT CODE SNIPPET LOGIC (FINAL FIX) */
+function formatContent(text){
+
+  if(!text) return "";
+
+  let parts = text.split("Code Snippet:");
+
+  if(parts.length === 1){
+    return "<p>" + escapeHTML(text) + "</p>";
+  }
+
+  let normalText = escapeHTML(parts[0]);
+  let codeText = escapeHTML(parts[1]);
+
+  return `
+    <p>${normalText}</p>
+    <b>Code Snippet:</b>
+    <div class="code-block">${codeText}</div>
+  `;
 }
 
 /* LOAD */
@@ -193,7 +214,7 @@ function renderList(){
   });
 }
 
-/* DETAILS */
+/* DETAILS PANEL */
 function showDetails(i){
 
   previewPanel.innerHTML=`
@@ -206,13 +227,13 @@ function showDetails(i){
     <hr>
 
     <h3>Description</h3>
-    <pre>${escapeHTML(i.description)}</pre>
+    ${formatContent(i.description)}
 
     <h3>Rationale</h3>
-    <pre>${escapeHTML(i.rationale)}</pre>
+    <p>${escapeHTML(i.rationale)}</p>
 
     <h3>Suggestion</h3>
-    <pre>${escapeHTML(i.suggestion)}</pre>
+    ${formatContent(i.suggestion)}
   `;
 }
 
