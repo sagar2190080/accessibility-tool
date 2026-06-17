@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <title>Accessibility Tool</title>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css
+https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -34,7 +34,7 @@ header {
 .card-box {
   flex:1;
   background:white;
-  padding:8px 10px;           /* 🔥 smaller */
+  padding:8px 10px;
   border-radius:6px;
   text-align:center;
   box-shadow:0 1px 3px rgba(0,0,0,0.08);
@@ -46,7 +46,6 @@ header {
   font-weight:bold;
 }
 
-/* Top color strip */
 .high { border-top:3px solid #e53935; }
 .medium { border-top:3px solid #fbc02d; }
 .low { border-top:3px solid #43a047; }
@@ -117,31 +116,15 @@ input, select, button {
 /* SECTION */
 .section { margin-top:16px; }
 
-/* CODE */
-.code-wrapper {
-  position:relative;
-  margin-top:8px;
-}
-
-.copy-btn {
-  position:absolute;
-  right:8px;
-  top:8px;
-  font-size:11px;
-  padding:3px 7px;
-  border:none;
-  background:#333;
-  color:white;
-  border-radius:4px;
-  cursor:pointer;
-}
-
+/* ✅ CLEAN CODE BLOCK (NO COPY BUTTON) */
 pre {
   background:#fafbfc;
   border:1px solid #e1e4e8;
   padding:10px;
-  border-radius:5px;
+  border-radius:6px;
   font-size:12px;
+  margin-top:8px;
+  overflow:auto;
 }
 
 </style>
@@ -151,20 +134,16 @@ pre {
 
 <header>Accessibility Tool</header>
 
-<!-- ✅ SMALL DASHBOARD -->
 <div class="dashboard">
   <div class="card-box">
     Total<br><span id="totalCount"></span>
   </div>
-
   <div class="card-box high">
     High<br><span id="highCount"></span>
   </div>
-
   <div class="card-box medium">
     Medium<br><span id="mediumCount"></span>
   </div>
-
   <div class="card-box low">
     Low<br><span id="lowCount"></span>
   </div>
@@ -199,13 +178,7 @@ function escapeHTML(text){
   return text?.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") || "";
 }
 
-function copyCode(btn){
-  let code = btn.nextElementSibling.innerText;
-  navigator.clipboard.writeText(code);
-  btn.innerText="Copied";
-  setTimeout(()=>btn.innerText="Copy",1000);
-}
-
+/* ✅ CLEAN FORMAT (NO COPY BUTTON) */
 function formatContent(text){
 
   if(!text) return "<p>-</p>";
@@ -219,10 +192,8 @@ function formatContent(text){
 
     return `
       ${textPart ? `<p>${textPart.trim()}</p>` : ""}
-      <div class="code-wrapper">
-        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-        <pre><code class="language-html">${codePart}</code></pre>
-      </div>`;
+      <pre><code class="language-html">${codePart}</code></pre>
+    `;
   }
 
   return `<p>${escaped}</p>`;
