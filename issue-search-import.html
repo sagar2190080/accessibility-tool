@@ -5,7 +5,6 @@
 <title>Import Excel</title>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
 </head>
 
 <body>
@@ -18,6 +17,7 @@
 
 function cleanText(text){
   if(!text) return "";
+
   return text
     .replace(/□/g,"'")
     .replace(/\(\.\.\.\)/g,"")
@@ -43,14 +43,38 @@ document.getElementById("upload").addEventListener("change", function(e){
 
     let cleaned = json.map(r => ({
 
-      issue: cleanText(r["Issue"]),
+      // ✅ CORE FIELDS
+      issue: cleanText(r["Issue"]),       
       type: cleanText(r["Type of Issue"]),
+
       description: cleanText(r["Issue Description"]),
-      rationale: cleanText(r["Rationale"]),
+
+      // ✅ FIXED RATIONALE (multiple column handling)
+      rationale: cleanText(
+        r["Rationale"] ||
+        r["Rational"] ||
+        r["Reason"] ||
+        r["Explanation"]
+      ),
+
       suggestion: cleanText(r["Suggestion"]),
       severity: cleanText(r["Severity"]),
-      wcagLevel: cleanText(r["WCAG Level"] || r["WCAG 2.0 Conformance Level"]),
-      wcagSC: cleanText(r["WCAG SC"] || r["WCAG 2.0"])
+
+      // ✅ FIXED WCAG LEVEL
+      wcagLevel: cleanText(
+        r["WCAG Level"] ||
+        r["WCAG 2.0 Conformance Level"] ||
+        r["WCAG Level "]   // handles trailing space
+      ),
+
+      // ✅ FIXED WCAG SC (critical fix)
+      wcagSC: cleanText(
+        r["WCAG SC"] ||
+        r["WCAG 2.0"] ||
+        r["Success Criteria"] ||
+        r["SC"] ||
+        r["WCAG SC "]       // handles trailing space
+      )
 
     }));
 
