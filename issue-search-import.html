@@ -15,12 +15,9 @@
 
 <script>
 
-/* ✅ SAFE CLEAN TEXT (FINAL FIX) */
+/* ✅ SAFE CLEAN TEXT */
 function cleanText(text){
-
   if(text === undefined || text === null) return "";
-
-  // ✅ Convert anything to string FIRST (CRITICAL FIX)
   text = String(text);
 
   return text
@@ -33,13 +30,11 @@ function cleanText(text){
     .trim();
 }
 
-/* ✅ NORMALIZE KEYS */
+/* ✅ NORMALIZE COLUMN KEYS */
 function normalizeRow(row){
-
   let newRow = {};
 
   Object.keys(row).forEach(key => {
-
     let cleanKey = key
       .toLowerCase()
       .replace(/[\r\n]+/g," ")
