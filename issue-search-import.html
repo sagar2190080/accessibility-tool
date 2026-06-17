@@ -43,38 +43,18 @@ document.getElementById("upload").addEventListener("change", function(e){
 
     let cleaned = json.map(r => ({
 
-      // ✅ CORE FIELDS
-      issue: cleanText(r["Issue"]),       
+      issue: cleanText(r["Issue"]),
       type: cleanText(r["Type of Issue"]),
 
       description: cleanText(r["Issue Description"]),
-
-      // ✅ FIXED RATIONALE (multiple column handling)
-      rationale: cleanText(
-        r["Rationale"] ||
-        r["Rational"] ||
-        r["Reason"] ||
-        r["Explanation"]
-      ),
+      rationale: cleanText(r["Rationale"]),   // ✅ EXACT MATCH
 
       suggestion: cleanText(r["Suggestion"]),
       severity: cleanText(r["Severity"]),
 
-      // ✅ FIXED WCAG LEVEL
-      wcagLevel: cleanText(
-        r["WCAG Level"] ||
-        r["WCAG 2.0 Conformance Level"] ||
-        r["WCAG Level "]   // handles trailing space
-      ),
-
-      // ✅ FIXED WCAG SC (critical fix)
-      wcagSC: cleanText(
-        r["WCAG SC"] ||
-        r["WCAG 2.0"] ||
-        r["Success Criteria"] ||
-        r["SC"] ||
-        r["WCAG SC "]       // handles trailing space
-      )
+      // ✅ FIXED EXACT COLUMN NAMES
+      wcagLevel: cleanText(r["WCAG 2.0 Conformance Level"]),
+      wcagSC: cleanText(r["WCAG 2.0 Success criteria"])
 
     }));
 
