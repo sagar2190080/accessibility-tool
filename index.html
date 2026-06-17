@@ -79,11 +79,9 @@ input {
 <div class="left">
 
 <input id="searchBox" placeholder="Search..." autocomplete="off">
-
 <div id="suggestions"></div>
 
 <br>
-
 <div id="resultList"></div>
 
 </div>
@@ -99,7 +97,7 @@ input {
 let issues = [];
 let filtered = [];
 
-/* ✅ LOAD */
+/* ✅ LOAD DATA */
 window.onload = function(){
 
   let saved = localStorage.getItem("repoData");
@@ -113,7 +111,10 @@ window.onload = function(){
   filtered = issues;
 
   renderList();
-  showDetails(filtered[0]);
+
+  if(filtered.length){
+    showDetails(filtered[0]);
+  }
 };
 
 /* ✅ SEARCH */
@@ -122,7 +123,7 @@ searchBox.addEventListener("input", function(){
   let q = this.value.toLowerCase();
 
   filtered = issues.filter(i =>
-    (i.issue + " " + i.description + " " + i.suggestion)
+    (i.issue + " " + i.description + " " + i.rationale + " " + i.suggestion)
     .toLowerCase()
     .includes(q)
   );
@@ -131,14 +132,13 @@ searchBox.addEventListener("input", function(){
   showSuggestions();
 });
 
-/* ✅ SUGGESTIONS (MATCH FILTERED LIST) */
+/* ✅ SUGGESTIONS */
 function showSuggestions(){
 
   let box = document.getElementById("suggestions");
-  let q = searchBox.value;
 
-  if(!q){
-    box.style.display = "none";
+  if(!searchBox.value){
+    box.style.display="none";
     return;
   }
 
@@ -155,7 +155,7 @@ function showSuggestions(){
       searchBox.value = i.issue;
       box.style.display="none";
 
-      filtered=[i];
+      filtered = [i];
       renderList();
       showDetails(i);
     };
