@@ -15,9 +15,13 @@
 
 <script>
 
-/* ✅ CLEAN TEXT */
+/* ✅ SAFE CLEAN TEXT (FINAL FIX) */
 function cleanText(text){
-  if(!text) return "";
+
+  if(text === undefined || text === null) return "";
+
+  // ✅ Convert anything to string FIRST (CRITICAL FIX)
+  text = String(text);
 
   return text
     .replace(/□/g,"'")
@@ -29,12 +33,13 @@ function cleanText(text){
     .trim();
 }
 
-/* ✅ NORMALIZE KEYS (CRITICAL FIX) */
+/* ✅ NORMALIZE KEYS */
 function normalizeRow(row){
 
   let newRow = {};
 
   Object.keys(row).forEach(key => {
+
     let cleanKey = key
       .toLowerCase()
       .replace(/[\r\n]+/g," ")
@@ -75,17 +80,15 @@ document.getElementById("upload").addEventListener("change", function(e){
         suggestion: cleanText(row["suggestion"]),
         severity: cleanText(row["severity"]),
 
-        /* ✅ FINAL FIX */
         wcagLevel: cleanText(row["wcag 2.0 conformance level"]),
         wcagSC: cleanText(row["wcag 2.0 success criteria"])
 
       };
-
     });
 
     localStorage.setItem("repoData", JSON.stringify(cleaned));
 
-    alert("✅ FINAL FIX APPLIED — data imported");
+    alert("✅ Data imported successfully");
 
   };
 
