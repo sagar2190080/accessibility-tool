@@ -4,15 +4,21 @@
 <meta charset="UTF-8">
 <title>Accessibility Tool</title>
 
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css
 
 <style>
 body { font-family: Arial; margin:0; }
 
-header { background:#1f3c88; color:white; padding:15px; }
+header {
+  background:#1f3c88;
+  color:white;
+  padding:15px;
+}
 
-.wrapper { display:flex; height:90vh; }
+.wrapper {
+  display:flex;
+  height:90vh;
+}
 
 .left {
   width:40%;
@@ -28,14 +34,18 @@ header { background:#1f3c88; color:white; padding:15px; }
   overflow:auto;
 }
 
-input { width:100%; padding:8px; }
+input, select {
+  width:100%;
+  padding:8px;
+  margin-bottom:8px;
+}
 
 #suggestions {
   position:absolute;
   background:white;
   width:95%;
   border:1px solid #ccc;
-  max-height:250px;
+  max-height:200px;
   overflow:auto;
   display:none;
 }
@@ -44,20 +54,24 @@ input { width:100%; padding:8px; }
   padding:8px;
   cursor:pointer;
 }
-.suggestion-item:hover { background:#e6f0ff; }
+.suggestion-item:hover {
+  background:#e6f0ff;
+}
 
 .card {
   padding:10px;
   border-bottom:1px solid #ccc;
   cursor:pointer;
 }
-.card:hover { background:#e6f0ff; }
+.card:hover {
+  background:#e6f0ff;
+}
 
 pre {
   background:#f4f4f4;
   padding:10px;
-  border-radius:6px;
   overflow:auto;
+  border-radius:6px;
 }
 </style>
 </head>
@@ -71,10 +85,19 @@ pre {
 <div class="wrapper">
 
 <div class="left">
+
+<!-- ✅ SEARCH -->
 <input id="searchBox" placeholder="Search...">
+
+<!-- ✅ TYPE FILTER -->
+<select id="typeFilter">
+  <option value="">All Types</option>
+</select>
+
 <div id="suggestions"></div>
-<br>
+
 <div id="resultList"></div>
+
 </div>
 
 <div class="right" id="previewPanel">
@@ -83,7 +106,7 @@ pre {
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.jsscript>
 
 <script>
 
@@ -99,14 +122,13 @@ function escapeHTML(text){
     .replace(/>/g,"&gt;");
 }
 
-/* ✅ FINAL SMART RENDER */
+/* ✅ format content */
 function formatContent(text){
 
   if(!text) return "";
 
   text = escapeHTML(text);
 
-  // ✅ CASE 1: Explicit code snippet
   if(text.includes("Code Snippet:")){
     let parts = text.split("Code Snippet:");
 
@@ -117,7 +139,6 @@ function formatContent(text){
     `;
   }
 
-  // ✅ CASE 2: Inline HTML detection
   let htmlMatch = text.match(/(&lt;.*&gt;)/);
 
   if(htmlMatch){
@@ -130,11 +151,10 @@ function formatContent(text){
     `;
   }
 
-  // ✅ Normal text
   return `<p>${text}</p>`;
 }
 
-/* LOAD */
+/* ✅ LOAD DATA */
 window.onload = function(){
 
   let saved = localStorage.getItem("repoData");
@@ -145,28 +165,58 @@ window.onload = function(){
   }
 
   issues = JSON.parse(saved);
-  filtered = issues;
 
-  renderList();
-  showDetails(filtered[0]);
+  populateTypeFilter();
+
+  applyFilters();
 };
 
-/* SEARCH */
-searchBox.addEventListener("input", function(){
+/* ✅ POPULATE TYPE DROPDOWN */
+function populateTypeFilter(){
 
-  let q = this.value.toLowerCase();
+  let types = [...new Set(issues.map(i => i.type).filter(Boolean))];
 
-  filtered = issues.filter(i =>
-    (i.issue + " " + i.description + " " + i.rationale + " " + i.suggestion)
-    .toLowerCase()
-    .includes(q)
-  );
+  typeFilter.innerHTML = '<option value="">All Types</option>';
+
+  types.forEach(t => {
+    let opt = document.createElement("option");
+    opt.value = t;
+    opt.textContent = t;
+    typeFilter.appendChild(opt);
+  });
+}
+
+/* ✅ APPLY FILTERS (SEARCH + TYPE) */
+function applyFilters(){
+
+  let q = searchBox.value.toLowerCase();
+  let selectedType = typeFilter.value;
+
+  filtered = issues.filter(i => {
+
+    let matchSearch =
+      (i.issue + " " + i.description + " " + i.rationale + " " + i.suggestion)
+      .toLowerCase()
+      .includes(q);
+
+    let matchType = selectedType ? i.type === selectedType : true;
+
+    return matchSearch && matchType;
+  });
 
   renderList();
   showSuggestions();
-});
 
-/* suggestions */
+  if(filtered.length){
+    showDetails(filtered[0]);
+  }
+}
+
+/* ✅ EVENTS */
+searchBox.addEventListener("input", applyFilters);
+typeFilter.addEventListener("change", applyFilters);
+
+/* ✅ SUGGESTIONS */
 function showSuggestions(){
 
   if(!searchBox.value){
@@ -178,12 +228,12 @@ function showSuggestions(){
 
   filtered.forEach(i => {
 
-    let div=document.createElement("div");
-    div.className="suggestion-item";
+    let div = document.createElement("div");
+    div.className = "suggestion-item";
     div.innerText = i.issue;
 
-    div.onclick=()=>{
-      searchBox.value=i.issue;
+    div.onclick = ()=>{
+      searchBox.value = i.issue;
       suggestions.style.display="none";
 
       filtered=[i];
@@ -197,24 +247,25 @@ function showSuggestions(){
   suggestions.style.display="block";
 }
 
-/* list */
+/* ✅ LIST */
 function renderList(){
 
   resultList.innerHTML="";
 
   filtered.forEach(i => {
 
-    let div=document.createElement("div");
+    let div = document.createElement("div");
     div.className="card";
-    div.innerHTML="<b>"+i.issue+"</b>";
 
-    div.onclick=()=>showDetails(i);
+    div.innerHTML = "<b>"+i.issue+"</b>";
+
+    div.onclick = ()=>showDetails(i);
 
     resultList.appendChild(div);
   });
 }
 
-/* details */
+/* ✅ DETAILS */
 function showDetails(i){
 
   previewPanel.innerHTML=`
@@ -236,7 +287,6 @@ function showDetails(i){
     ${formatContent(i.suggestion)}
   `;
 
-  // ✅ highlight code
   document.querySelectorAll("pre code").forEach(block=>{
     hljs.highlightElement(block);
   });
