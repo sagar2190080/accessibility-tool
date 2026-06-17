@@ -29,19 +29,22 @@ function cleanText(text){
     .trim();
 }
 
-/* ✅ SMART COLUMN FINDER (FINAL FIX) */
-function getValue(row, keyword){
-  let keys = Object.keys(row);
+/* ✅ NORMALIZE KEYS (CRITICAL FIX) */
+function normalizeRow(row){
 
-  for(let k of keys){
-    let normalized = k.toLowerCase().trim();
+  let newRow = {};
 
-    if(normalized.includes(keyword.toLowerCase())){
-      return row[k];
-    }
-  }
+  Object.keys(row).forEach(key => {
+    let cleanKey = key
+      .toLowerCase()
+      .replace(/[\r\n]+/g," ")
+      .replace(/\s+/g," ")
+      .trim();
 
-  return "";
+    newRow[cleanKey] = row[key];
+  });
+
+  return newRow;
 }
 
 document.getElementById("upload").addEventListener("change", function(e){
@@ -57,25 +60,32 @@ document.getElementById("upload").addEventListener("change", function(e){
 
     let json = XLSX.utils.sheet_to_json(ws);
 
-    let cleaned = json.map(r => ({
+    let cleaned = json.map(r => {
 
-      issue: cleanText(getValue(r,"issue")),
-      type: cleanText(getValue(r,"type")),
+      let row = normalizeRow(r);
 
-      description: cleanText(getValue(r,"description")),
-      rationale: cleanText(getValue(r,"rationale")),
+      return {
 
-      suggestion: cleanText(getValue(r,"suggestion")),
-      severity: cleanText(getValue(r,"severity")),
+        issue: cleanText(row["issue"]),
+        type: cleanText(row["type of issue"]),
 
-      wcagLevel: cleanText(getValue(r,"conformance")),
-      wcagSC: cleanText(getValue(r,"criteria"))
+        description: cleanText(row["issue description"]),
+        rationale: cleanText(row["rationale"]),
 
-    }));
+        suggestion: cleanText(row["suggestion"]),
+        severity: cleanText(row["severity"]),
+
+        /* ✅ FINAL FIX */
+        wcagLevel: cleanText(row["wcag 2.0 conformance level"]),
+        wcagSC: cleanText(row["wcag 2.0 success criteria"])
+
+      };
+
+    });
 
     localStorage.setItem("repoData", JSON.stringify(cleaned));
 
-    alert("✅ Data imported successfully (FINAL FIX APPLIED)");
+    alert("✅ FINAL FIX APPLIED — data imported");
 
   };
 
