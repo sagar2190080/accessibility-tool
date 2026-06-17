@@ -4,22 +4,15 @@
 <meta charset="UTF-8">
 <title>Accessibility Tool</title>
 
-<!-- ✅ Highlight.js CSS -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
 
 <style>
 body { font-family: Arial; margin:0; }
 
-header {
-  background:#1f3c88;
-  color:white;
-  padding:15px;
-}
+header { background:#1f3c88; color:white; padding:15px; }
 
-.wrapper {
-  display:flex;
-  height:90vh;
-}
+.wrapper { display:flex; height:90vh; }
 
 .left {
   width:40%;
@@ -35,10 +28,7 @@ header {
   overflow:auto;
 }
 
-input {
-  width:100%;
-  padding:8px;
-}
+input { width:100%; padding:8px; }
 
 #suggestions {
   position:absolute;
@@ -54,36 +44,22 @@ input {
   padding:8px;
   cursor:pointer;
 }
-.suggestion-item:hover {
-  background:#e6f0ff;
-}
+.suggestion-item:hover { background:#e6f0ff; }
 
 .card {
   padding:10px;
   border-bottom:1px solid #ccc;
   cursor:pointer;
 }
-.card:hover {
-  background:#e6f0ff;
-}
+.card:hover { background:#e6f0ff; }
 
-/* ✅ code block */
 pre {
   background:#f4f4f4;
   padding:10px;
   border-radius:6px;
   overflow:auto;
 }
-
-/* ✅ inline code */
-.inline-code {
-  background:#eee;
-  padding:2px 6px;
-  font-family: monospace;
-  border-radius:4px;
-}
 </style>
-
 </head>
 
 <body>
@@ -97,7 +73,6 @@ pre {
 <div class="left">
 <input id="searchBox" placeholder="Search...">
 <div id="suggestions"></div>
-
 <br>
 <div id="resultList"></div>
 </div>
@@ -108,7 +83,6 @@ pre {
 
 </div>
 
-<!-- ✅ Highlight.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
 <script>
@@ -125,14 +99,14 @@ function escapeHTML(text){
     .replace(/>/g,"&gt;");
 }
 
-/* ✅ FINAL SMART FORMAT FUNCTION */
+/* ✅ FINAL SMART RENDER */
 function formatContent(text){
 
   if(!text) return "";
 
   text = escapeHTML(text);
 
-  /* ✅ detect full code snippet */
+  // ✅ CASE 1: Explicit code snippet
   if(text.includes("Code Snippet:")){
     let parts = text.split("Code Snippet:");
 
@@ -143,10 +117,21 @@ function formatContent(text){
     `;
   }
 
-  /* ✅ detect inline HTML and highlight inline */
-  return text.replace(/(&lt;[^&]+&gt;)/g, function(match){
-    return `<span class="inline-code">${match}</span>`;
-  });
+  // ✅ CASE 2: Inline HTML detection
+  let htmlMatch = text.match(/(&lt;.*&gt;)/);
+
+  if(htmlMatch){
+    let before = text.substring(0, htmlMatch.index);
+    let code = text.substring(htmlMatch.index);
+
+    return `
+      <p>${before}</p>
+      <pre><code class="language-html">${code}</code></pre>
+    `;
+  }
+
+  // ✅ Normal text
+  return `<p>${text}</p>`;
 }
 
 /* LOAD */
@@ -242,17 +227,17 @@ function showDetails(i){
     <hr>
 
     <h3>Description</h3>
-    <div>${formatContent(i.description)}</div>
+    ${formatContent(i.description)}
 
     <h3>Rationale</h3>
     <p>${escapeHTML(i.rationale)}</p>
 
     <h3>Suggestion</h3>
-    <div>${formatContent(i.suggestion)}</div>
+    ${formatContent(i.suggestion)}
   `;
 
-  /* ✅ apply syntax highlight */
-  document.querySelectorAll("pre code").forEach(block => {
+  // ✅ highlight code
+  document.querySelectorAll("pre code").forEach(block=>{
     hljs.highlightElement(block);
   });
 }
