@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <title>Accessibility Tool</title>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+<!-- Highlight.js CSS -->
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
 
 <style>
 body { font-family: Arial; margin:0; }
@@ -25,7 +27,6 @@ header {
   background:#f5f5f5;
   padding:10px;
   overflow:auto;
-  position:relative;
 }
 
 .right {
@@ -53,8 +54,35 @@ pre {
   border-radius:6px;
   overflow:auto;
 }
-</style>
 
+/* ✅ META ROW */
+.meta-row {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:10px 0;
+}
+
+.meta-item {
+  padding:6px 12px;
+  border-radius:20px;
+  font-size:13px;
+  color:white;
+  font-weight:bold;
+}
+
+/* TYPE */
+.type { background:#007bff; }
+
+/* SEVERITY */
+.sev-high { background:#dc3545; }
+.sev-medium { background:#ffc107; color:black; }
+.sev-low { background:#28a745; }
+
+/* WCAG */
+.wcag { background:#6f42c1; }
+
+</style>
 </head>
 
 <body>
@@ -65,32 +93,35 @@ pre {
 
 <div class="wrapper">
 
+<!-- LEFT -->
 <div class="left">
 
 <input id="searchBox" placeholder="Search...">
 
 <select id="typeFilter">
-  <option value="">All Types</option>
+<option value="">All Types</option>
 </select>
 
 <select id="severityFilter">
-  <option value="">All Severity</option>
+<option value="">All Severity</option>
 </select>
 
 <select id="wcagFilter">
-  <option value="">All WCAG Level</option>
+<option value="">All WCAG</option>
 </select>
 
 <div id="resultList"></div>
 
 </div>
 
+<!-- RIGHT -->
 <div class="right" id="previewPanel">
 <h3>Select an issue</h3>
 </div>
 
 </div>
 
+<!-- Highlight.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
 <script>
@@ -98,7 +129,7 @@ pre {
 let issues = [];
 let filtered = [];
 
-/* ✅ escape HTML */
+/* ESCAPE HTML */
 function escapeHTML(text){
   if(!text) return "";
   return text
@@ -107,7 +138,7 @@ function escapeHTML(text){
     .replace(/>/g,"&gt;");
 }
 
-/* ✅ SMART FORMAT CONTENT */
+/* SMART FORMAT */
 function formatContent(text){
 
   if(!text) return "";
@@ -139,7 +170,7 @@ function formatContent(text){
   return `<p>${text}</p>`;
 }
 
-/* ✅ LOAD DATA */
+/* LOAD */
 window.onload = function(){
 
   let saved = localStorage.getItem("repoData");
@@ -155,40 +186,27 @@ window.onload = function(){
   applyFilters();
 };
 
-/* ✅ POPULATE FILTER DROPDOWNS */
+/* POPULATE FILTERS */
 function populateFilters(){
 
   let types = [...new Set(issues.map(i=>i.type).filter(Boolean))];
   let severity = [...new Set(issues.map(i=>i.severity).filter(Boolean))];
   let wcag = [...new Set(issues.map(i=>i.wcagLevel).filter(Boolean))];
 
-  typeFilter.innerHTML = '<option value="">All Types</option>';
-  severityFilter.innerHTML = '<option value="">All Severity</option>';
-  wcagFilter.innerHTML = '<option value="">All WCAG Level</option>';
-
   types.forEach(v=>{
-    let opt=document.createElement("option");
-    opt.value=v;
-    opt.textContent=v;
-    typeFilter.appendChild(opt);
+    typeFilter.innerHTML += `<option value="${v}">${v}</option>`;
   });
 
   severity.forEach(v=>{
-    let opt=document.createElement("option");
-    opt.value=v;
-    opt.textContent=v;
-    severityFilter.appendChild(opt);
+    severityFilter.innerHTML += `<option value="${v}">${v}</option>`;
   });
 
   wcag.forEach(v=>{
-    let opt=document.createElement("option");
-    opt.value=v;
-    opt.textContent=v;
-    wcagFilter.appendChild(opt);
+    wcagFilter.innerHTML += `<option value="${v}">${v}</option>`;
   });
 }
 
-/* ✅ APPLY ALL FILTERS */
+/* APPLY FILTERS */
 function applyFilters(){
 
   let q = searchBox.value.toLowerCase();
@@ -199,7 +217,7 @@ function applyFilters(){
   filtered = issues.filter(i => {
 
     let matchSearch =
-      (i.issue + " " + i.description + " " + i.rationale + " " + i.suggestion)
+      (i.issue + " " + i.description + i.rationale + i.suggestion)
       .toLowerCase().includes(q);
 
     let matchType = t ? i.type === t : true;
@@ -218,13 +236,13 @@ function applyFilters(){
   }
 }
 
-/* ✅ EVENTS */
+/* EVENTS */
 searchBox.addEventListener("input", applyFilters);
 typeFilter.addEventListener("change", applyFilters);
 severityFilter.addEventListener("change", applyFilters);
 wcagFilter.addEventListener("change", applyFilters);
 
-/* ✅ LIST */
+/* LIST */
 function renderList(){
 
   resultList.innerHTML="";
@@ -233,7 +251,6 @@ function renderList(){
 
     let div=document.createElement("div");
     div.className="card";
-
     div.innerHTML="<b>"+i.issue+"</b>";
 
     div.onclick=()=>showDetails(i);
@@ -242,15 +259,31 @@ function renderList(){
   });
 }
 
-/* ✅ DETAILS */
+/* DETAILS */
 function showDetails(i){
 
   previewPanel.innerHTML=`
     <h2>${i.issue}</h2>
 
-    <p><b>Type:</b> ${i.type}</p>
-    <p><b>Severity:</b> ${i.severity}</p>
-    <p><b>WCAG:</b> ${i.wcagLevel} | ${i.wcagSC}</p>
+    <div class="meta-row">
+
+      <div class="meta-item type">
+        Type: ${i.type}
+      </div>
+
+      <div class="meta-item ${
+        i.severity === "High" ? "sev-high" :
+        i.severity === "Medium" ? "sev-medium" :
+        "sev-low"
+      }">
+        Severity: ${i.severity}
+      </div>
+
+      <div class="meta-item wcag">
+        WCAG: ${i.wcagLevel} | ${i.wcagSC}
+      </div>
+
+    </div>
 
     <hr>
 
