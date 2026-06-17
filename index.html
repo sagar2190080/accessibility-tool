@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <title>Accessibility Tool</title>
 
+<!-- ✅ Highlight.js CSS -->
+<link rel="stylesheet"
+ href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+
 <style>
 body { font-family: Arial; margin:0; }
 
@@ -64,14 +68,13 @@ input {
   background:#e6f0ff;
 }
 
-/* ✅ CODE BLOCK STYLE */
-.code-block {
+/* ✅ Code block styling */
+pre {
   background:#f4f4f4;
   padding:10px;
-  margin-top:5px;
-  font-family: monospace;
   overflow:auto;
   white-space:pre-wrap;
+  border-radius:6px;
 }
 </style>
 
@@ -86,11 +89,13 @@ input {
 <div class="wrapper">
 
 <div class="left">
+
 <input id="searchBox" placeholder="Search...">
 <div id="suggestions"></div>
 
 <br>
 <div id="resultList"></div>
+
 </div>
 
 <div class="right" id="previewPanel">
@@ -99,12 +104,15 @@ input {
 
 </div>
 
+<!-- ✅ Highlight.js Script -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
 <script>
 
 let issues = [];
 let filtered = [];
 
-/* ✅ ESCAPE HTML */
+/* ✅ Escape HTML */
 function escapeHTML(text){
   if(!text) return "";
   return text
@@ -113,7 +121,7 @@ function escapeHTML(text){
     .replace(/>/g,"&gt;");
 }
 
-/* ✅ SPLIT CODE SNIPPET LOGIC (FINAL FIX) */
+/* ✅ Split content + syntax highlight */
 function formatContent(text){
 
   if(!text) return "";
@@ -130,11 +138,11 @@ function formatContent(text){
   return `
     <p>${normalText}</p>
     <b>Code Snippet:</b>
-    <div class="code-block">${codeText}</div>
+    <pre><code class="language-html">${codeText}</code></pre>
   `;
 }
 
-/* LOAD */
+/* ✅ Load data */
 window.onload = function(){
 
   let saved = localStorage.getItem("repoData");
@@ -151,7 +159,7 @@ window.onload = function(){
   showDetails(filtered[0]);
 };
 
-/* SEARCH */
+/* ✅ Search */
 searchBox.addEventListener("input", function(){
 
   let q = this.value.toLowerCase();
@@ -166,7 +174,7 @@ searchBox.addEventListener("input", function(){
   showSuggestions();
 });
 
-/* SUGGESTIONS */
+/* ✅ Suggestions */
 function showSuggestions(){
 
   if(!searchBox.value){
@@ -197,7 +205,7 @@ function showSuggestions(){
   suggestions.style.display="block";
 }
 
-/* LIST */
+/* ✅ List */
 function renderList(){
 
   resultList.innerHTML="";
@@ -214,7 +222,7 @@ function renderList(){
   });
 }
 
-/* DETAILS PANEL */
+/* ✅ Details panel */
 function showDetails(i){
 
   previewPanel.innerHTML=`
@@ -235,6 +243,11 @@ function showDetails(i){
     <h3>Suggestion</h3>
     ${formatContent(i.suggestion)}
   `;
+
+  /* ✅ APPLY SYNTAX HIGHLIGHT */
+  document.querySelectorAll('pre code').forEach((block) => {
+    hljs.highlightElement(block);
+  });
 }
 
 </script>
