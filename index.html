@@ -63,6 +63,12 @@ input {
 .card:hover {
   background:#e6f0ff;
 }
+
+pre {
+  background:#f4f4f4;
+  padding:10px;
+  white-space:pre-wrap;
+}
 </style>
 
 </head>
@@ -93,6 +99,19 @@ input {
 
 let issues = [];
 let filtered = [];
+
+/* ✅ ESCAPE HTML (CRITICAL FIX) */
+function escapeHTML(text){
+
+  if(!text) return "";
+
+  return text
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
 
 /* LOAD */
 window.onload = function(){
@@ -187,27 +206,14 @@ function showDetails(i){
     <hr>
 
     <h3>Description</h3>
-    <p>${i.description}</p>
+    <pre>${escapeHTML(i.description)}</pre>
 
     <h3>Rationale</h3>
-    <p>${i.rationale}</p>
+    <pre>${escapeHTML(i.rationale)}</pre>
 
     <h3>Suggestion</h3>
-    <p>${i.suggestion}</p>
+    <pre>${escapeHTML(i.suggestion)}</pre>
   `;
-}
-
-/* ✅ SAFE HTML ESCAPE (FINAL FIX) */
-function escapeHTML(text){
-
-  if(!text) return "";
-
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
 }
 
 </script>
