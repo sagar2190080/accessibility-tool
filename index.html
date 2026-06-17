@@ -20,37 +20,42 @@ body {
 header {
   background:#1f3c88;
   color:white;
-  padding:15px;
-  font-size:20px;
-  font-weight:600;
+  padding:12px 15px;
+  font-size:18px;
 }
 
-/* DASHBOARD */
+/* ✅ COMPACT DASHBOARD */
 .dashboard {
   display:flex;
-  gap:15px;
-  padding:15px;
+  gap:10px;
+  padding:10px 15px;
 }
 
 .card-box {
   flex:1;
   background:white;
-  padding:15px;
-  border-radius:10px;
+  padding:8px 10px;           /* 🔥 smaller */
+  border-radius:6px;
   text-align:center;
-  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  box-shadow:0 1px 3px rgba(0,0,0,0.08);
+  font-size:13px;
 }
 
 .card-box span {
-  font-size:20px;
+  font-size:16px;
+  font-weight:bold;
 }
 
-.high { border-top:4px solid #e53935; }
-.medium { border-top:4px solid #fbc02d; }
-.low { border-top:4px solid #43a047; }
+/* Top color strip */
+.high { border-top:3px solid #e53935; }
+.medium { border-top:3px solid #fbc02d; }
+.low { border-top:3px solid #43a047; }
 
 /* LAYOUT */
-.wrapper { display:flex; height:calc(100vh - 130px); }
+.wrapper {
+  display:flex;
+  height:calc(100vh - 110px);
+}
 
 .left {
   width:32%;
@@ -62,27 +67,28 @@ header {
 
 .right {
   width:68%;
-  padding:20px;
+  padding:18px;
   overflow:auto;
 }
 
 /* FILTERS */
 .filters {
-  padding:12px;
+  padding:10px;
   border-bottom:1px solid #f0f0f0;
 }
 
 input, select, button {
   width:100%;
-  padding:8px;
-  margin-bottom:8px;
-  border-radius:6px;
+  padding:7px;
+  margin-bottom:6px;
+  border-radius:5px;
   border:1px solid #ccc;
+  font-size:13px;
 }
 
 /* LIST */
 .card {
-  padding:12px;
+  padding:10px;
   border-bottom:1px solid #f1f1f1;
   cursor:pointer;
 }
@@ -91,14 +97,14 @@ input, select, button {
 /* META */
 .meta-row {
   display:flex;
-  gap:8px;
-  margin:12px 0;
+  gap:6px;
+  margin:10px 0;
 }
 
 .meta-item {
-  padding:5px 10px;
-  border-radius:16px;
-  font-size:12px;
+  padding:4px 8px;
+  border-radius:14px;
+  font-size:11px;
   color:white;
 }
 
@@ -109,52 +115,59 @@ input, select, button {
 .wcag { background:#6a1b9a; }
 
 /* SECTION */
-.section { margin-top:20px; }
+.section { margin-top:16px; }
 
-/* ✅ CLEAN CODE BLOCK */
+/* CODE */
 .code-wrapper {
   position:relative;
-  margin-top:10px;
+  margin-top:8px;
 }
 
 .copy-btn {
   position:absolute;
-  right:10px;
-  top:10px;
-  font-size:12px;
-  padding:4px 8px;
+  right:8px;
+  top:8px;
+  font-size:11px;
+  padding:3px 7px;
   border:none;
   background:#333;
   color:white;
   border-radius:4px;
   cursor:pointer;
-  opacity:0.8;
 }
-
-.copy-btn:hover { opacity:1; }
 
 pre {
   background:#fafbfc;
   border:1px solid #e1e4e8;
-  padding:12px;
-  border-radius:6px;
-  overflow:auto;
-  font-size:13px;
+  padding:10px;
+  border-radius:5px;
+  font-size:12px;
 }
 
 </style>
-
 </head>
 
 <body>
 
 <header>Accessibility Tool</header>
 
+<!-- ✅ SMALL DASHBOARD -->
 <div class="dashboard">
-  <div class="card-box">Total<br><span id="totalCount"></span></div>
-  <div class="card-box high">High<br><span id="highCount"></span></div>
-  <div class="card-box medium">Medium<br><span id="mediumCount"></span></div>
-  <div class="card-box low">Low<br><span id="lowCount"></span></div>
+  <div class="card-box">
+    Total<br><span id="totalCount"></span>
+  </div>
+
+  <div class="card-box high">
+    High<br><span id="highCount"></span>
+  </div>
+
+  <div class="card-box medium">
+    Medium<br><span id="mediumCount"></span>
+  </div>
+
+  <div class="card-box low">
+    Low<br><span id="lowCount"></span>
+  </div>
 </div>
 
 <div class="wrapper">
@@ -182,12 +195,10 @@ pre {
 let issues = [];
 let filtered = [];
 
-/* ESCAPE */
 function escapeHTML(text){
   return text?.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") || "";
 }
 
-/* COPY */
 function copyCode(btn){
   let code = btn.nextElementSibling.innerText;
   navigator.clipboard.writeText(code);
@@ -195,7 +206,6 @@ function copyCode(btn){
   setTimeout(()=>btn.innerText="Copy",1000);
 }
 
-/* ✅ FIXED CLEAN FORMAT */
 function formatContent(text){
 
   if(!text) return "<p>-</p>";
@@ -204,7 +214,6 @@ function formatContent(text){
   let htmlStart = escaped.search(/&lt;[a-zA-Z]/);
 
   if(htmlStart !== -1){
-
     let textPart = escaped.substring(0, htmlStart);
     let codePart = escaped.substring(htmlStart);
 
@@ -213,14 +222,12 @@ function formatContent(text){
       <div class="code-wrapper">
         <button class="copy-btn" onclick="copyCode(this)">Copy</button>
         <pre><code class="language-html">${codePart}</code></pre>
-      </div>
-    `;
+      </div>`;
   }
 
   return `<p>${escaped}</p>`;
 }
 
-/* LOAD */
 window.onload = function(){
 
   let data = localStorage.getItem("repoData");
@@ -236,7 +243,6 @@ window.onload = function(){
   updateDashboard();
 }
 
-/* DASHBOARD */
 function updateDashboard(){
   totalCount.innerText = issues.length;
   highCount.innerText = issues.filter(i=>i.severity==="High").length;
@@ -244,7 +250,6 @@ function updateDashboard(){
   lowCount.innerText = issues.filter(i=>i.severity==="Low").length;
 }
 
-/* FILTERS */
 function populateFilters(){
 
   [...new Set(issues.map(i=>i.type))].forEach(v=>{
@@ -260,7 +265,6 @@ function populateFilters(){
   });
 }
 
-/* APPLY */
 function applyFilters(){
 
   let q = searchBox.value.toLowerCase();
@@ -270,6 +274,7 @@ function applyFilters(){
 
   filtered = issues.filter(i=>{
     let txt = (i.issue+i.description+i.rationale+i.suggestion).toLowerCase();
+
     return txt.includes(q) &&
       (!t||i.type===t) &&
       (!s||i.severity===s) &&
@@ -285,7 +290,6 @@ typeFilter.onchange=applyFilters;
 severityFilter.onchange=applyFilters;
 wcagFilter.onchange=applyFilters;
 
-/* LIST */
 function renderList(){
   resultList.innerHTML="";
   filtered.forEach(i=>{
@@ -297,7 +301,6 @@ function renderList(){
   });
 }
 
-/* DETAILS */
 function showDetails(i){
 
   previewPanel.innerHTML=`
@@ -307,9 +310,7 @@ function showDetails(i){
       <div class="meta-item type">${i.type}</div>
       <div class="meta-item ${
         i.severity==="High"?"sev-high":
-        i.severity==="Medium"?"sev-medium":"sev-low"}">
-        ${i.severity}
-      </div>
+        i.severity==="Medium"?"sev-medium":"sev-low"}">${i.severity}</div>
       <div class="meta-item wcag">${i.wcagLevel} | ${i.wcagSC}</div>
     </div>
 
@@ -334,7 +335,6 @@ function showDetails(i){
   });
 }
 
-/* EXPORT */
 function exportToExcel(){
   let ws = XLSX.utils.json_to_sheet(filtered);
   let wb = XLSX.utils.book_new();
