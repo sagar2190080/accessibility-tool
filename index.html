@@ -4,158 +4,157 @@
 <meta charset="UTF-8">
 <title>Accessibility Tool</title>
 
+<!-- Highlight -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<!-- Export Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
 
 body {
-  font-family: "Segoe UI", Arial;
+  font-family: "Segoe UI";
   margin:0;
-  background:#f0f2f5;
+  background:#f4f6f9;
 }
 
-/* ✅ HEADER */
+/* HEADER */
 header {
   background:#1f3c88;
   color:white;
-  padding:15px 20px;
+  padding:15px;
   font-size:20px;
   font-weight:bold;
 }
 
-/* ✅ MAIN LAYOUT */
-.wrapper {
+/* DASHBOARD */
+.dashboard {
   display:flex;
-  height:calc(100vh - 60px);
+  gap:10px;
+  padding:10px;
 }
 
-/* ✅ LEFT PANEL */
+.card-box {
+  flex:1;
+  background:white;
+  padding:10px;
+  border-radius:8px;
+  text-align:center;
+  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+  font-weight:bold;
+}
+
+.high { border-top:4px solid #dc3545; }
+.medium { border-top:4px solid #ffc107; }
+.low { border-top:4px solid #28a745; }
+
+/* LAYOUT */
+.wrapper {
+  display:flex;
+  height:80vh;
+}
+
 .left {
   width:35%;
   background:white;
-  border-right:1px solid #ddd;
   display:flex;
   flex-direction:column;
+  border-right:1px solid #ddd;
 }
 
-/* ✅ FILTER BAR */
-.filters {
-  padding:10px;
-  border-bottom:1px solid #eee;
-  background:#fafafa;
-}
-
-input, select {
-  width:100%;
-  padding:8px;
-  margin-bottom:6px;
-  border:1px solid #ccc;
-  border-radius:6px;
-}
-
-/* ✅ ISSUE LIST */
-.list {
-  overflow:auto;
-  flex:1;
-}
-
-.card {
-  padding:12px;
-  border-bottom:1px solid #eee;
-  cursor:pointer;
-  transition:0.2s;
-}
-
-.card:hover {
-  background:#f5f8ff;
-}
-
-.card.active {
-  background:#e6edff;
-  border-left:4px solid #1f3c88;
-}
-
-/* ✅ RIGHT PANEL */
 .right {
   width:65%;
   padding:20px;
   overflow:auto;
 }
 
-/* ✅ ISSUE TITLE */
-.issue-title {
-  font-size:22px;
-  font-weight:bold;
-  margin-bottom:10px;
+/* FILTERS */
+.filters {
+  padding:10px;
+  border-bottom:1px solid #eee;
 }
 
-/* ✅ META BADGES */
+input, select, button {
+  width:100%;
+  padding:8px;
+  margin-bottom:6px;
+}
+
+/* LIST */
+.card {
+  padding:10px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+}
+.card:hover { background:#f0f4ff; }
+
+/* META */
 .meta-row {
   display:flex;
   gap:10px;
-  margin-bottom:15px;
+  margin:10px 0;
   flex-wrap:wrap;
 }
 
 .meta-item {
-  padding:6px 12px;
+  padding:6px 10px;
   border-radius:20px;
-  font-size:13px;
   color:white;
-  font-weight:bold;
+  font-size:12px;
 }
 
-/* COLORS */
 .type { background:#007bff; }
 .sev-high { background:#dc3545; }
 .sev-medium { background:#ffc107; color:black; }
 .sev-low { background:#28a745; }
 .wcag { background:#6f42c1; }
 
-/* ✅ SECTIONS */
-.section {
-  margin-top:20px;
-}
-
-.section h3 {
-  margin-bottom:8px;
-}
-
-/* ✅ CODE BLOCK */
+/* CODE */
 pre {
   background:#f6f8fa;
-  padding:12px;
-  border-radius:8px;
-  overflow:auto;
+  padding:10px;
+  border-radius:6px;
 }
 
 </style>
-
 </head>
 
 <body>
 
 <header>Accessibility Tool</header>
 
+<!-- ✅ DASHBOARD -->
+<div class="dashboard">
+  <div class="card-box">Total<br><span id="totalCount">0</span></div>
+  <div class="card-box high">High<br><span id="highCount">0</span></div>
+  <div class="card-box medium">Medium<br><span id="mediumCount">0</span></div>
+  <div class="card-box low">Low<br><span id="lowCount">0</span></div>
+</div>
+
 <div class="wrapper">
 
-<!-- LEFT PANEL -->
+<!-- LEFT -->
 <div class="left">
 
 <div class="filters">
+
 <input id="searchBox" placeholder="Search...">
 
 <select id="typeFilter"><option value="">All Types</option></select>
 <select id="severityFilter"><option value="">All Severity</option></select>
 <select id="wcagFilter"><option value="">All WCAG</option></select>
+
+<!-- ✅ EXPORT BUTTON -->
+<button onclick="exportToExcel()">⬇ Export Filtered Data</button>
+
 </div>
 
-<div class="list" id="resultList"></div>
+<div id="resultList"></div>
 
 </div>
 
-<!-- RIGHT PANEL -->
+<!-- RIGHT -->
 <div class="right" id="previewPanel">
 <h3>Select an issue</h3>
 </div>
@@ -166,75 +165,79 @@ pre {
 
 let issues = [];
 let filtered = [];
-let activeIndex = 0;
 
 /* ESCAPE */
 function escapeHTML(text){
-  if(!text) return "";
-  return text
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;");
+  return text?.replace(/</g,"&lt;").replace(/>/g,"&gt;") || "";
 }
 
 /* FORMAT CONTENT */
 function formatContent(text){
 
-  if(!text) return "<p>-</p>";
+  if(!text) return "";
 
-  text = escapeHTML(text);
+  let escaped = escapeHTML(text);
 
-  if(text.includes("Code Snippet:")){
-    let parts = text.split("Code Snippet:");
-    return `
-      <p>${parts[0]}</p>
-      <pre><code class="language-html">${parts[1]}</code></pre>
-    `;
+  if(escaped.includes("Code Snippet:")){
+    let p = escaped.split("Code Snippet:");
+    return `<p>${p[0]}</p><pre><code>${p[1]}</code></pre>`;
   }
 
-  let htmlMatch = text.match(/(&lt;.*&gt;)/);
+  let match = escaped.match(/(&lt;.*&gt;)/);
 
-  if(htmlMatch){
-    let before = text.substring(0, htmlMatch.index);
-    let code = text.substring(htmlMatch.index);
-
-    return `
-      <p>${before}</p>
-      <pre><code class="language-html">${code}</code></pre>
-    `;
+  if(match){
+    let before = escaped.substring(0, match.index);
+    let code = escaped.substring(match.index);
+    return `<p>${before}</p><pre><code>${code}</code></pre>`;
   }
 
-  return `<p>${text}</p>`;
+  return `<p>${escaped}</p>`;
 }
 
 /* LOAD */
 window.onload = function(){
 
-  let saved = localStorage.getItem("repoData");
+  let data = localStorage.getItem("repoData");
 
-  if(!saved){
-    previewPanel.innerHTML = "<h3>Please import Excel first</h3>";
+  if(!data){
+    previewPanel.innerHTML="<h3>Please import Excel first</h3>";
     return;
   }
 
-  issues = JSON.parse(saved);
+  issues = JSON.parse(data);
 
   populateFilters();
   applyFilters();
-};
+  updateDashboard();
+}
+
+/* DASHBOARD */
+function updateDashboard(){
+
+  totalCount.innerText = issues.length;
+
+  highCount.innerText = issues.filter(i=>i.severity==="High").length;
+  mediumCount.innerText = issues.filter(i=>i.severity==="Medium").length;
+  lowCount.innerText = issues.filter(i=>i.severity==="Low").length;
+}
 
 /* FILTERS */
 function populateFilters(){
 
-  let types = [...new Set(issues.map(i=>i.type).filter(Boolean))];
-  let severity = [...new Set(issues.map(i=>i.severity).filter(Boolean))];
-  let wcag = [...new Set(issues.map(i=>i.wcagLevel).filter(Boolean))];
+  [...new Set(issues.map(i=>i.type))].forEach(v=>{
+    if(v) typeFilter.innerHTML += `<option>${v}</option>`;
+  });
 
-  types.forEach(v=>typeFilter.innerHTML += `<option>${v}</option>`);
-  severity.forEach(v=>severityFilter.innerHTML += `<option>${v}</option>`);
-  wcag.forEach(v=>wcagFilter.innerHTML += `<option>${v}</option>`);
+  [...new Set(issues.map(i=>i.severity))].forEach(v=>{
+    if(v) severityFilter.innerHTML += `<option>${v}</option>`;
+  });
+
+  [...new Set(issues.map(i=>i.wcagLevel))].forEach(v=>{
+    if(v) wcagFilter.innerHTML += `<option>${v}</option>`;
+  });
 }
 
+/* APPLY FILTERS */
 function applyFilters(){
 
   let q = searchBox.value.toLowerCase();
@@ -244,52 +247,47 @@ function applyFilters(){
 
   filtered = issues.filter(i => {
 
-    let text = (i.issue + i.description + i.rationale + i.suggestion).toLowerCase();
+    let txt = (i.issue + i.description + i.rationale + i.suggestion).toLowerCase();
 
-    return text.includes(q) &&
-      (!t || i.type === t) &&
-      (!s || i.severity === s) &&
-      (!w || i.wcagLevel === w);
+    return txt.includes(q) &&
+      (!t || i.type===t) &&
+      (!s || i.severity===s) &&
+      (!w || i.wcagLevel===w);
   });
 
   renderList();
-  if(filtered.length) showDetails(0);
+
+  if(filtered.length) showDetails(filtered[0]);
 }
 
 /* EVENTS */
-searchBox.addEventListener("input", applyFilters);
-typeFilter.addEventListener("change", applyFilters);
-severityFilter.addEventListener("change", applyFilters);
-wcagFilter.addEventListener("change", applyFilters);
+searchBox.oninput = applyFilters;
+typeFilter.onchange = applyFilters;
+severityFilter.onchange = applyFilters;
+wcagFilter.onchange = applyFilters;
 
 /* LIST */
 function renderList(){
 
   resultList.innerHTML="";
 
-  filtered.forEach((i,index)=>{
+  filtered.forEach(i => {
 
-    let div=document.createElement("div");
-    div.className="card " + (index===activeIndex ? "active" : "");
-    div.innerHTML="<b>"+i.issue+"</b>";
+    let d=document.createElement("div");
+    d.className="card";
+    d.innerHTML="<b>"+i.issue+"</b>";
 
-    div.onclick=()=>{
-      activeIndex=index;
-      renderList();
-      showDetails(index);
-    };
+    d.onclick=()=>showDetails(i);
 
-    resultList.appendChild(div);
+    resultList.appendChild(d);
   });
 }
 
 /* DETAILS */
-function showDetails(index){
-
-  let i = filtered[index];
+function showDetails(i){
 
   previewPanel.innerHTML=`
-    <div class="issue-title">${i.issue}</div>
+    <h2>${i.issue}</h2>
 
     <div class="meta-row">
       <div class="meta-item type">Type: ${i.type}</div>
@@ -299,30 +297,38 @@ function showDetails(index){
       }">
         Severity: ${i.severity}
       </div>
-      <div class="meta-item wcag">
-        WCAG: ${i.wcagLevel} | ${i.wcagSC}
-      </div>
+      <div class="meta-item wcag">WCAG: ${i.wcagLevel} | ${i.wcagSC}</div>
     </div>
 
-    <div class="section">
-      <h3>Description</h3>
-      ${formatContent(i.description)}
-    </div>
+    <hr>
 
-    <div class="section">
-      <h3>Rationale</h3>
-      ${formatContent(i.rationale)}
-    </div>
+    <h3>Description</h3>
+    ${formatContent(i.description)}
 
-    <div class="section">
-      <h3>Suggestion</h3>
-      ${formatContent(i.suggestion)}
-    </div>
+    <h3>Rationale</h3>
+    <p>${escapeHTML(i.rationale)}</p>
+
+    <h3>Suggestion</h3>
+    ${formatContent(i.suggestion)}
   `;
+}
 
-  document.querySelectorAll("pre code").forEach(block=>{
-    hljs.highlightElement(block);
-  });
+/* ✅ EXPORT */
+function exportToExcel(){
+
+  let data = filtered.map(i=>({
+    Issue:i.issue,
+    Type:i.type,
+    Severity:i.severity,
+    WCAG_Level:i.wcagLevel,
+    WCAG_SC:i.wcagSC
+  }));
+
+  let ws = XLSX.utils.json_to_sheet(data);
+  let wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Issues");
+
+  XLSX.writeFile(wb, "Filtered_Issues.xlsx");
 }
 
 </script>
