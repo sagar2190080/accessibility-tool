@@ -32,6 +32,7 @@ header {
   overflow:auto;
 }
 
+/* search */
 input {
   width:100%;
   padding:8px;
@@ -57,6 +58,7 @@ input {
   background:#e6f0ff;
 }
 
+/* list */
 .card {
   padding:10px;
   border-bottom:1px solid #ccc;
@@ -99,7 +101,21 @@ input {
 let issues = [];
 let filtered = [];
 
-/* LOAD DATA */
+/* ✅ AUTO CLEAN FUNCTION */
+function cleanText(text){
+  if(!text) return "";
+
+  return text
+    .replace(/□/g, "'")
+    .replace(/\(\.\.\.\)/g, "")
+    .replace(/\.{2,}/g, "")
+    .replace(/;/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/[\r\n]+/g, " ")
+    .trim();
+}
+
+/* ✅ LOAD DATA */
 window.onload = function(){
 
   let saved = localStorage.getItem("repoData");
@@ -119,7 +135,7 @@ window.onload = function(){
   }
 };
 
-/* SEARCH */
+/* ✅ SEARCH */
 searchBox.addEventListener("input", function(){
 
   let q = this.value.toLowerCase().trim();
@@ -132,7 +148,7 @@ searchBox.addEventListener("input", function(){
   showSuggestions();
 });
 
-/* ✅ SUGGESTIONS SAME AS LEFT */
+/* ✅ SUGGESTIONS (SAME AS LEFT PANEL) */
 function showSuggestions(){
 
   let box = document.getElementById("suggestions");
@@ -171,7 +187,7 @@ function showSuggestions(){
   box.style.display = filtered.length ? "block" : "none";
 }
 
-/* LIST */
+/* ✅ LIST */
 function renderList(){
 
   resultList.innerHTML="";
@@ -189,7 +205,7 @@ function renderList(){
   });
 }
 
-/* DETAILS */
+/* ✅ DETAILS PANEL */
 function showDetails(i){
 
   let issue = i["Issue"] || i.issue || "-";
@@ -199,11 +215,14 @@ function showDetails(i){
   let wcagLevel = i["wcagLevel"] || "-";
   let wcagSC = i["wcagSC"] || "-";
 
-  let description =
-    ((i["Issue Description"] || i.description || "") + " " +
-     (i["Rationale"] || i.rationale || "")).trim();
+  let rawDesc =
+    (i["Issue Description"] || i.description || "") + " " +
+    (i["Rationale"] || i.rationale || "");
 
-  let suggestion = i["Suggestion"] || i.suggestion || "-";
+  let rawSug = i["Suggestion"] || i.suggestion || "";
+
+  let description = cleanText(rawDesc);
+  let suggestion = cleanText(rawSug);
 
   previewPanel.innerHTML = `
     <h2>${issue}</h2>
