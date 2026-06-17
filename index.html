@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Accessibility Tool</title>
 
-https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
 
 <style>
 body { font-family: Arial; margin:0; }
@@ -40,40 +40,21 @@ input, select {
   margin-bottom:8px;
 }
 
-#suggestions {
-  position:absolute;
-  background:white;
-  width:95%;
-  border:1px solid #ccc;
-  max-height:200px;
-  overflow:auto;
-  display:none;
-}
-
-.suggestion-item {
-  padding:8px;
-  cursor:pointer;
-}
-.suggestion-item:hover {
-  background:#e6f0ff;
-}
-
 .card {
   padding:10px;
   border-bottom:1px solid #ccc;
   cursor:pointer;
 }
-.card:hover {
-  background:#e6f0ff;
-}
+.card:hover { background:#e6f0ff; }
 
 pre {
   background:#f4f4f4;
   padding:10px;
-  overflow:auto;
   border-radius:6px;
+  overflow:auto;
 }
 </style>
+
 </head>
 
 <body>
@@ -86,15 +67,19 @@ pre {
 
 <div class="left">
 
-<!-- ✅ SEARCH -->
 <input id="searchBox" placeholder="Search...">
 
-<!-- ✅ TYPE FILTER -->
 <select id="typeFilter">
   <option value="">All Types</option>
 </select>
 
-<div id="suggestions"></div>
+<select id="severityFilter">
+  <option value="">All Severity</option>
+</select>
+
+<select id="wcagFilter">
+  <option value="">All WCAG Level</option>
+</select>
 
 <div id="resultList"></div>
 
@@ -106,7 +91,7 @@ pre {
 
 </div>
 
-https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.jsscript>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
 <script>
 
@@ -122,7 +107,7 @@ function escapeHTML(text){
     .replace(/>/g,"&gt;");
 }
 
-/* ✅ format content */
+/* ✅ SMART FORMAT CONTENT */
 function formatContent(text){
 
   if(!text) return "";
@@ -166,86 +151,78 @@ window.onload = function(){
 
   issues = JSON.parse(saved);
 
-  populateTypeFilter();
-
+  populateFilters();
   applyFilters();
 };
 
-/* ✅ POPULATE TYPE DROPDOWN */
-function populateTypeFilter(){
+/* ✅ POPULATE FILTER DROPDOWNS */
+function populateFilters(){
 
-  let types = [...new Set(issues.map(i => i.type).filter(Boolean))];
+  let types = [...new Set(issues.map(i=>i.type).filter(Boolean))];
+  let severity = [...new Set(issues.map(i=>i.severity).filter(Boolean))];
+  let wcag = [...new Set(issues.map(i=>i.wcagLevel).filter(Boolean))];
 
   typeFilter.innerHTML = '<option value="">All Types</option>';
+  severityFilter.innerHTML = '<option value="">All Severity</option>';
+  wcagFilter.innerHTML = '<option value="">All WCAG Level</option>';
 
-  types.forEach(t => {
-    let opt = document.createElement("option");
-    opt.value = t;
-    opt.textContent = t;
+  types.forEach(v=>{
+    let opt=document.createElement("option");
+    opt.value=v;
+    opt.textContent=v;
     typeFilter.appendChild(opt);
+  });
+
+  severity.forEach(v=>{
+    let opt=document.createElement("option");
+    opt.value=v;
+    opt.textContent=v;
+    severityFilter.appendChild(opt);
+  });
+
+  wcag.forEach(v=>{
+    let opt=document.createElement("option");
+    opt.value=v;
+    opt.textContent=v;
+    wcagFilter.appendChild(opt);
   });
 }
 
-/* ✅ APPLY FILTERS (SEARCH + TYPE) */
+/* ✅ APPLY ALL FILTERS */
 function applyFilters(){
 
   let q = searchBox.value.toLowerCase();
-  let selectedType = typeFilter.value;
+  let t = typeFilter.value;
+  let s = severityFilter.value;
+  let w = wcagFilter.value;
 
   filtered = issues.filter(i => {
 
     let matchSearch =
       (i.issue + " " + i.description + " " + i.rationale + " " + i.suggestion)
-      .toLowerCase()
-      .includes(q);
+      .toLowerCase().includes(q);
 
-    let matchType = selectedType ? i.type === selectedType : true;
+    let matchType = t ? i.type === t : true;
+    let matchSeverity = s ? i.severity === s : true;
+    let matchWCAG = w ? i.wcagLevel === w : true;
 
-    return matchSearch && matchType;
+    return matchSearch && matchType && matchSeverity && matchWCAG;
   });
 
   renderList();
-  showSuggestions();
 
   if(filtered.length){
     showDetails(filtered[0]);
+  } else {
+    previewPanel.innerHTML = "<h3>No results found</h3>";
   }
 }
 
 /* ✅ EVENTS */
 searchBox.addEventListener("input", applyFilters);
 typeFilter.addEventListener("change", applyFilters);
-
-/* ✅ SUGGESTIONS */
-function showSuggestions(){
-
-  if(!searchBox.value){
-    suggestions.style.display="none";
-    return;
-  }
-
-  suggestions.innerHTML="";
-
-  filtered.forEach(i => {
-
-    let div = document.createElement("div");
-    div.className = "suggestion-item";
-    div.innerText = i.issue;
-
-    div.onclick = ()=>{
-      searchBox.value = i.issue;
-      suggestions.style.display="none";
-
-      filtered=[i];
-      renderList();
-      showDetails(i);
-    };
-
-    suggestions.appendChild(div);
-  });
-
-  suggestions.style.display="block";
-}
+severityFilter.addEventListener("change", applyFilters);
+wcagFilter.addEventListener("change", applyFilters);
 
 /* ✅ LIST */
 function renderList(){
@@ -254,12 +231,12 @@ function renderList(){
 
   filtered.forEach(i => {
 
-    let div = document.createElement("div");
+    let div=document.createElement("div");
     div.className="card";
 
-    div.innerHTML = "<b>"+i.issue+"</b>";
+    div.innerHTML="<b>"+i.issue+"</b>";
 
-    div.onclick = ()=>showDetails(i);
+    div.onclick=()=>showDetails(i);
 
     resultList.appendChild(div);
   });
