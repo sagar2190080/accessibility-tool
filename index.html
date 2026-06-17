@@ -12,7 +12,7 @@ body{
   background:#f2f2f2;
 }
 
-/* MAIN LAYOUT */
+/* MAIN */
 .wrapper{
   display:flex;
   height:100vh;
@@ -43,15 +43,6 @@ body{
   background:white;
 }
 
-/* HEADER */
-.header{
-  background:#2f56d3;
-  color:white;
-  padding:8px 12px;
-  display:flex;
-  justify-content:space-between;
-}
-
 /* TITLE */
 .title{
   font-size:20px;
@@ -59,12 +50,19 @@ body{
   padding:15px;
 }
 
-/* TABS */
-.tabs{
+/* ✅ TAB + SEVERITY ROW (IMPORTANT CHANGE) */
+.tab-row{
   display:flex;
+  justify-content:space-between;
+  align-items:center;
   border-bottom:1px solid #ccc;
   background:#eee;
   padding-left:10px;
+}
+
+/* TABS */
+.tabs{
+  display:flex;
 }
 
 .tab{
@@ -82,43 +80,36 @@ body{
   font-weight:bold;
 }
 
-/* ✅ CONTENT + SEVERITY (NEW STRUCTURE) */
-.body{
-  display:flex;
-  padding:15px;
-  gap:20px;
-}
-
-/* LEFT CONTENT */
-.content{
-  width:75%;
-  line-height:1.6;
-}
-
-/* ✅ INLINE SEVERITY BOX */
+/* ✅ INLINE SEVERITY (NEW POSITION) */
 .severity-box{
-  width:25%;
+  margin-right:15px;
   border:1px solid #ccc;
   text-align:center;
-  height:fit-content;
+  min-width:120px;
 }
 
-/* HEADER */
 .sev-header{
-  background:#eee;
-  padding:6px;
+  background:#f2f2f2;
+  font-size:12px;
+  padding:5px;
 }
 
-/* VALUE */
 .sev-value{
-  font-size:26px;
-  padding:15px;
+  padding:8px;
+  font-size:16px;
 }
 
 /* COLORS */
 .high{background:#ff6a00;color:white;}
 .medium{background:#ffc107;}
 .low{background:#4caf50;color:white;}
+
+/* CONTENT */
+.content{
+  padding:15px;
+  line-height:1.6;
+  font-size:14px;
+}
 
 /* CODE */
 pre{
@@ -136,10 +127,10 @@ pre{
 
 <div class="wrapper">
 
-<!-- LEFT PANEL -->
+<!-- LEFT -->
 <div class="left" id="resultList"></div>
 
-<!-- RIGHT PANEL -->
+<!-- RIGHT -->
 <div class="right" id="previewPanel">
   <h3 style="padding:20px">Select an issue</h3>
 </div>
@@ -153,7 +144,6 @@ let current={};
 
 /* LOAD */
 window.onload=function(){
-
   let data=localStorage.getItem("repoData");
   if(!data) return;
 
@@ -167,6 +157,7 @@ function renderList(){
   resultList.innerHTML="";
 
   issues.forEach(i=>{
+
     let div=document.createElement("div");
     div.className="card";
     div.innerText=i.issue;
@@ -186,8 +177,7 @@ function switchTab(tab){
   let content="";
 
   if(tab==="t1") content=format(current.description);
-  if(tab==="t2") content="<p>No examples available</p>";
-  if(tab==="t3") content=format(current.suggestion);
+  if(tab==="t2") content=format(current.suggestion);
 
   document.getElementById("contentArea").innerHTML=content;
 }
@@ -199,27 +189,17 @@ function showDetails(i){
 
   previewPanel.innerHTML=`
 
-  <div class="header">
-    <div>View Best Practice</div>
-    <div style="cursor:pointer" onclick="previewPanel.innerHTML=''">✕</div>
-  </div>
-
   <div class="title">${i.issue}</div>
 
-  <div class="tabs">
-    <div class="tab active" id="t1" onclick="switchTab('t1')">Description</div>
-    <div class="tab" id="t2" onclick="switchTab('t2')">Examples</div>
-    <div class="tab" id="t3" onclick="switchTab('t3')">Recommendations</div>
-  </div>
+  <!-- ✅ TAB + SEVERITY SAME ROW -->
+  <div class="tab-row">
 
-  <div class="body">
-
-    <!-- MAIN CONTENT -->
-    <div class="content" id="contentArea">
-      ${format(i.description)}
+    <div class="tabs">
+      <div class="tab active" id="t1" onclick="switchTab('t1')">Description</div>
+      <div class="tab" id="t2" onclick="switchTab('t2')">Recommendations</div>
     </div>
 
-    <!-- ✅ SEVERITY INSIDE PANEL -->
+    <!-- ✅ SEVERITY INSIDE TAB PANEL -->
     <div class="severity-box">
       <div class="sev-header">Severity</div>
       <div class="sev-value ${
@@ -230,6 +210,11 @@ function showDetails(i){
       </div>
     </div>
 
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="contentArea">
+    ${format(i.description)}
   </div>
   `;
 }
