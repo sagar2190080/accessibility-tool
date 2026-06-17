@@ -8,17 +8,17 @@
 
 body{
   margin:0;
-  font-family: Arial;
+  font-family:Arial;
   background:#f2f2f2;
 }
 
-/* MAIN */
+/* MAIN LAYOUT */
 .wrapper{
   display:flex;
   height:100vh;
 }
 
-/* LEFT PANEL */
+/* LEFT LIST */
 .left{
   width:30%;
   background:white;
@@ -30,13 +30,12 @@ body{
   padding:12px;
   border-bottom:1px solid #eee;
   cursor:pointer;
-  font-size:14px;
 }
 .card:hover{
   background:#f5f5f5;
 }
 
-/* RIGHT */
+/* RIGHT PANEL */
 .right{
   width:70%;
   display:flex;
@@ -49,7 +48,6 @@ body{
   background:#2f56d3;
   color:white;
   padding:8px 12px;
-  font-size:14px;
   display:flex;
   justify-content:space-between;
 }
@@ -84,43 +82,36 @@ body{
   font-weight:bold;
 }
 
-/* BODY */
+/* ✅ CONTENT + SEVERITY (NEW STRUCTURE) */
 .body{
   display:flex;
-  height:100%;
+  padding:15px;
+  gap:20px;
 }
 
-/* CONTENT */
+/* LEFT CONTENT */
 .content{
   width:75%;
-  padding:15px;
   line-height:1.6;
-  font-size:14px;
 }
 
-/* SIDEBAR */
-.sidebar{
+/* ✅ INLINE SEVERITY BOX */
+.severity-box{
   width:25%;
-  border-left:1px solid #ccc;
-  padding:10px;
-  background:#f9f9f9;
-}
-
-/* SCORE BOX */
-.box{
   border:1px solid #ccc;
-  margin-bottom:10px;
   text-align:center;
+  height:fit-content;
 }
 
-.box-header{
+/* HEADER */
+.sev-header{
   background:#eee;
   padding:6px;
-  font-size:13px;
 }
 
-.big{
-  font-size:28px;
+/* VALUE */
+.sev-value{
+  font-size:26px;
   padding:15px;
 }
 
@@ -139,17 +130,16 @@ pre{
 }
 
 </style>
-
 </head>
 
 <body>
 
 <div class="wrapper">
 
-<!-- LEFT -->
+<!-- LEFT PANEL -->
 <div class="left" id="resultList"></div>
 
-<!-- RIGHT -->
+<!-- RIGHT PANEL -->
 <div class="right" id="previewPanel">
   <h3 style="padding:20px">Select an issue</h3>
 </div>
@@ -163,6 +153,7 @@ let current={};
 
 /* LOAD */
 window.onload=function(){
+
   let data=localStorage.getItem("repoData");
   if(!data) return;
 
@@ -223,22 +214,20 @@ function showDetails(i){
 
   <div class="body">
 
-    <!-- CONTENT -->
+    <!-- MAIN CONTENT -->
     <div class="content" id="contentArea">
       ${format(i.description)}
     </div>
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-
-      <div class="box">
-        <div class="box-header">Severity</div>
-        <div class="big ${
-          i.severity==="High"?"high":
-          i.severity==="Medium"?"medium":"low"
-        }">${i.severity}</div>
+    <!-- ✅ SEVERITY INSIDE PANEL -->
+    <div class="severity-box">
+      <div class="sev-header">Severity</div>
+      <div class="sev-value ${
+        i.severity==="High"?"high":
+        i.severity==="Medium"?"medium":"low"
+      }">
+        ${i.severity}
       </div>
-
     </div>
 
   </div>
@@ -256,6 +245,7 @@ function format(text){
   if(pos!=-1){
     let t=escaped.substring(0,pos);
     let c=escaped.substring(pos);
+
     return `<p>${t}</p><pre>${c}</pre>`;
   }
 
