@@ -4,114 +4,95 @@
 <meta charset="UTF-8">
 <title>Accessibility Tool</title>
 
-<!-- ✅ Highlight.js -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
 <style>
 body{
   margin:0;
-  font-family:"Segoe UI", Arial;
+  font-family:"Segoe UI";
   background:#eef1f5;
 }
 
-/* LAYOUT */
-.wrapper{
-  display:flex;
-  height:100vh;
-}
+.wrapper{ display:flex; height:100vh; }
 
-/* ✅ LEFT PANEL */
+/* LEFT */
 .left{
   width:28%;
   background:white;
   border-right:1px solid #ddd;
+  position:relative;
   overflow:auto;
 }
 
-/* LIST ITEM */
-.card{
-  padding:12px 14px;
-  border-bottom:1px solid #f0f0f0;
+.search{
+  padding:10px;
+}
+
+.search input{
+  width:100%;
+  padding:8px;
+}
+
+/* suggestions */
+#suggestions{
+  position:absolute;
+  top:50px;
+  left:10px;
+  width:90%;
+  background:white;
+  border:1px solid #ddd;
+  max-height:200px;
+  overflow:auto;
+  display:none;
+  z-index:10;
+}
+
+.suggestion-item{
+  padding:8px;
   cursor:pointer;
-  transition:0.2s;
+}
+.suggestion-item:hover{
+  background:#eef1ff;
 }
 
-.card:hover{
-  background:#f6f8ff;
+/* list */
+.card{
+  padding:12px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
 }
-
 .card.active{
   background:#e9efff;
   border-left:4px solid #2f56d3;
-  padding-left:10px;
 }
 
-/* ✅ RIGHT PANEL */
-.right{
-  width:72%;
-  background:white;
-  display:flex;
-  flex-direction:column;
-}
+/* RIGHT */
+.right{ width:72%; background:white; }
 
-/* TITLE */
-.title{
-  font-size:20px;
-  font-weight:600;
-  padding:15px;
-}
+.title{ padding:15px; font-size:20px; font-weight:600; }
 
-/* TABS */
-.tab-row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  border-bottom:1px solid #ddd;
-}
-
-.tabs{
-  display:flex;
-}
+.tabs{ display:flex; border-bottom:1px solid #ddd; }
 
 .tab{
-  padding:10px 14px;
+  padding:10px;
   cursor:pointer;
-  border-bottom:3px solid transparent;
 }
-
 .tab.active{
   border-bottom:3px solid #2f56d3;
   font-weight:600;
 }
 
-/* SEVERITY */
-.severity{
-  margin-right:10px;
-  padding:6px 12px;
-  border-radius:4px;
-  font-weight:600;
-}
-
-.high{background:#ff6a00;color:white;}
-.medium{background:#ffc107;}
-.low{background:#4caf50;color:white;}
-
-/* CONTENT */
 .content{
   padding:18px;
-  overflow:auto;
   line-height:1.6;
 }
 
-/* CODE */
 pre{
   background:#f8f9fa;
   border:1px solid #ddd;
-  border-radius:6px;
   padding:12px;
-  overflow:auto;
-  font-size:13px;
+  border-radius:6px;
 }
 </style>
 </head>
@@ -120,8 +101,19 @@ pre{
 
 <div class="wrapper">
 
-<div class="left" id="resultList"></div>
+<!-- LEFT -->
+<div class="left">
 
+  <div class="search">
+    <input id="searchBox" placeholder="Search issues...">
+  </div>
+
+  <div id="suggestions"></div>
+  <div id="resultList"></div>
+
+</div>
+
+<!-- RIGHT -->
 <div class="right" id="previewPanel">
   <h3 style="padding:20px">Select an issue</h3>
 </div>
@@ -130,41 +122,53 @@ pre{
 
 <script>
 
-let issues=[];
-let current={};
-let currentIndex=0;
+/* ✅ FIXED DATA LOADING (DOUBLE PARSE) */
+let raw = localStorage.getItem("repoData") || "[]";
+let temp = JSON.parse(raw);
 
-/* LOAD */
-window.onload=function(){
-  let data=localStorage.getItem("repoData");
-  if(!data) return;
-
-  issues=JSON.parse(data);
-  renderList();
-
-  if(issues.length){
-    showDetails(issues[0]);
+let issues = temp.map(item => {
+  try{
+    return typeof item === "string" ? JSON.parse(item) : item;
+  }catch(e){
+    return item;
   }
-};
+});
 
-/* ✅ LEFT PANEL LIST */
-function renderList(){
+console.log("FINAL ISSUES:", issues);
 
-  resultList.innerHTML="";
+/* STATE */
+let current = {};
+let currentIndex = 0;
 
-  issues.forEach((i,index)=>{
+/* INIT */
+if(issues.length){
+  renderList(issues);
+  showDetails(issues[0]);
+}
 
-    let d=document.createElement("div");
-    d.className="card";
-    d.innerText=i.issue;
+/* ✅ LIST */
+function renderList(list){
 
-    if(index===currentIndex){
+  resultList.innerHTML = "";
+
+  if(list.length === 0){
+    resultList.innerHTML = "<p style='padding:10px;'>No results</p>";
+    return;
+  }
+
+  list.forEach((i,index)=>{
+
+    let d = document.createElement("div");
+    d.className = "card";
+    d.innerText = i.issue;
+
+    if(index === currentIndex){
       d.classList.add("active");
     }
 
-    d.onclick=()=>{
-      currentIndex=index;
-      renderList();
+    d.onclick = ()=>{
+      currentIndex = index;
+      renderList(list);
       showDetails(i);
     };
 
@@ -172,29 +176,22 @@ function renderList(){
   });
 }
 
-/* ✅ SHOW DETAILS */
+/* ✅ DETAILS */
 function showDetails(i){
 
-  current=i;
+  current = i;
 
-  previewPanel.innerHTML=`
+  previewPanel.innerHTML = `
     <div class="title">${i.issue}</div>
 
-    <div class="tab-row">
-      <div class="tabs">
-        <div class="tab active" id="t1" onclick="switchTab('t1')">Description</div>
-        <div class="tab" id="t2" onclick="switchTab('t2')">User Impact</div>
-        <div class="tab" id="t3" onclick="switchTab('t3')">Recommendations</div>
-      </div>
-
-      <div class="severity ${
-        i.severity==="High"?"high":
-        i.severity==="Medium"?"medium":"low"
-      }">${i.severity}</div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab(event,'desc')">Description</div>
+      <div class="tab" onclick="switchTab(event,'impact')">User Impact</div>
+      <div class="tab" onclick="switchTab(event,'rec')">Recommendations</div>
     </div>
 
     <div class="content" id="contentArea">
-      ${format(i.description)}
+      ${formatText(i.description)}
     </div>
   `;
 
@@ -202,89 +199,247 @@ function showDetails(i){
 }
 
 /* ✅ SWITCH TABS */
-function switchTab(tab){
+function switchTab(e,type){
 
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  document.getElementById(tab).classList.add("active");
+  e.target.classList.add("active");
 
-  let content="";
+  let content = "";
 
-  if(tab==="t1") content=format(current.description);
-  if(tab==="t2") content=format(current.rationale);
-  if(tab==="t3") content=format(current.suggestion);
+  if(type==="desc") content = formatText(current.description);
+  if(type==="impact") content = formatText(current.rationale);
+  if(type==="rec") content = formatText(current.suggestion);
 
-  contentArea.innerHTML=content;
-  applyHighlight();
+  
+document.getElementById("contentArea").innerHTML = content;
+applyHighlight();
+
 }
 
-/* ✅ FINAL FORMATTER (FULL FIXED) */
-function format(text){
+/* ✅ ✅ FINAL FORMATTER (FIXED) */
+function formatText(text){
 
-  if(!text) return "<p>-</p>";
+    if(!text) return "<p>-</p>";
 
-  let input=String(text);
+    let input = String(text).trim();
 
-  let normalText="";
-  let codeText="";
+    /* NEW: Handle explicit Code Snippet marker */
+    if(/Code Snippet:/i.test(input)){
 
-  /* detect code */
-  if(/Code Snippet:/i.test(input)){
-    let parts=input.split(/Code Snippet:/i);
-    normalText=parts[0].trim();
-    codeText=parts[1].trim();
-  }
-  else if(/<[^>]+>/.test(input)){
-    let pos=input.search(/<[^>]+>/);
-    normalText=input.substring(0,pos).trim();
-    codeText=input.substring(pos).trim();
-  }
-  else{
-    return `<p>${input}</p>`;
-  }
+        let parts = input.split(/Code Snippet:/i);
 
-  /* ✅ FIXED TAG SPLIT */
-  codeText = codeText
-    .replace(/>\s*</g, ">\n<")
-    .replace(/</g,"\n<")
-    .replace(/>/g,">\n")
-    .replace(/\n{2,}/g,"\n");
+        return `
+            <p>${escapeText(parts[0].trim())}</p>
 
-  let lines = codeText.split("\n")
-    .map(l=>l.trim())
-    .filter(l=>l);
+            <h4 style="margin-top:20px;">Code Example</h4>
 
-  let formatted=[];
-  let indent=0;
-
-  lines.forEach(line=>{
-
-    let isClosing=/^<\/.+>/.test(line);
-    let isOpening=/^<[^\/!][^>]*>$/.test(line);
-    let isSelfClosing=/\/>$/.test(line);
-
-    if(isClosing) indent--;
-
-    formatted.push("  ".repeat(Math.max(0,indent)) + line);
-
-    if(isOpening && !isSelfClosing){
-      indent++;
+            <pre>
+<code class="language-html">
+${escapeHTML(formatHTML(parts[1].trim()))}
+</code>
+            </pre>
+        `;
     }
+
+    let codeStart = findActualCodeStart(input);
+console.log("FORMAT INPUT:", input);
+console.log("CODE START:", codeStart);
+
+    if(codeStart === -1){
+
+    return `
+        <p>${escapeText(input)}</p>
+    `;
+}
+
+    let recommendationText =
+        input.substring(0, codeStart).trim();
+
+    let codeSnippet =
+        input.substring(codeStart).trim();
+
+    return `
+        <p>${escapeText(recommendationText)}</p>
+
+        <h4 style="margin-top:20px;">Code Example</h4>
+
+        <pre>
+<code class="language-html">
+${escapeHTML(formatHTML(codeSnippet))}
+</code>
+        </pre>
+    `;
+}
+function findActualCodeStart(text){
+
+ const regexes = [
+
+    /* Escaped HTML */
+    /&lt;div\s+[^&gt;]*&gt;/ig,
+    /&lt;fieldset\s+[^&gt;]*&gt;/ig,
+    /&lt;form\s+[^&gt;]*&gt;/ig,
+    /&lt;input\s+[^&gt;]*&gt;/ig,
+    /&lt;button\s+[^&gt;]*&gt;/ig,
+    /&lt;select\s+[^&gt;]*&gt;/ig,
+    /&lt;textarea\s+[^&gt;]*&gt;/ig,
+    /&lt;table\s+[^&gt;]*&gt;/ig,
+    /&lt;a\s+[^&gt;]*&gt;/ig,
+    /&lt;img\s+[^&gt;]*&gt;/ig,
+    /&lt;span\s+[^&gt;]*&gt;/ig,
+
+    /* Real HTML */
+    /<div\s+[^>]*>/ig,
+    /<fieldset\s+[^>]*>/ig,
+    /<form\s+[^>]*>/ig,
+    /<input\s+[^>]*>/ig,
+    /<button\s+[^>]*>/ig,
+    /<select\s+[^>]*>/ig,
+    /<textarea\s+[^>]*>/ig,
+    /<table\s+[^>]*>/ig,
+    /<a\s+[^>]*>/ig,
+    /<img\s+[^>]*>/ig,
+    /<span\s+[^>]*>/ig
+
+];
+
+
+    let bestIndex = -1;
+
+    regexes.forEach(regex => {
+
+        regex.lastIndex = 0;
+
+        let match = regex.exec(text);
+
+        if(!match) return;
+
+        let candidateIndex = match.index;
+
+        let remainingText =
+            text.substring(candidateIndex);
+
+        
+
+let tagCount =
+    (
+        remainingText.match(
+            /(&lt;\/?[a-z][^&gt;]*&gt;|<\/?[a-z][^>]*>)/ig
+        ) || []
+    ).length;
+
+
+
+const hasRealCodeStructure =
+    tagCount >= 2 ||
+
+    /(&lt;|<)(input|button|select|textarea|a|img|span)\s+[^>]*(id|name|type|src|href|class|aria-)/i
+    .test(remainingText);
+
+
+
+
+if(hasRealCodeStructure){
+
+
+            if(bestIndex === -1 ||
+               candidateIndex < bestIndex){
+
+                bestIndex = candidateIndex;
+            }
+        }
+
+    });
+
+    return bestIndex;
+}
+
+function formatHTML(html){
+
+    return html
+        .replace(/>\s*</g, ">\n<")
+        .replace(/\n{2,}/g,"\n")
+        .trim();
+}
+
+function escapeHTML(text){
+
+    return String(text)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
+}
+
+function escapeText(text){
+
+    return String(text)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
+}
+/* ✅ SEARCH */
+searchBox.addEventListener("input", function(){
+
+  let q = this.value.toLowerCase();
+
+  if(!q){
+    renderList(issues);
+    suggestions.style.display="none";
+    return;
+  }
+
+ let matches = issues.filter(i =>
+ (
+   (i.issue || "") +
+   (i.description || "") +
+   (i.rationale || "") +
+   (i.suggestion || "")
+ )
+ .toLowerCase()
+ .includes(q)
+);
+
+  renderList(matches);
+  showSuggestions(matches);
+});
+
+/* ✅ SUGGESTIONS */
+function showSuggestions(list){
+
+  if(!list.length){
+    suggestions.style.display="none";
+    return;
+  }
+
+  suggestions.innerHTML="";
+
+  list.slice(0,8).forEach(i=>{
+
+    let div = document.createElement("div");
+    div.className="suggestion-item";
+    div.innerText=i.issue;
+
+    div.onclick = ()=>{
+      showDetails(i);
+      searchBox.value = i.issue;
+      suggestions.style.display="none";
+    };
+
+    suggestions.appendChild(div);
   });
 
-  let finalCode=formatted.join("\n")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;");
-
-  return `
-    ${normalText ? `<p>${normalText}</p>` : ""}
-    <pre><code class="language-html">${finalCode}</code></pre>
-  `;
+  suggestions.style.display="block";
 }
+
+/* ✅ CLOSE */
+document.addEventListener("click",(e)=>{
+  if(!searchBox.contains(e.target)) suggestions.style.display="none";
+});
+
 
 /* ✅ HIGHLIGHT */
 function applyHighlight(){
-  document.querySelectorAll("pre code").forEach(block=>{
-    hljs.highlightElement(block);
+  document.querySelectorAll("pre code").forEach(b=>{
+    hljs.highlightElement(b);
   });
 }
 
