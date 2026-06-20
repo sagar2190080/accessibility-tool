@@ -67,6 +67,16 @@ body{
   border-left:4px solid #2f56d3;
 }
 
+.card:focus {
+  outline: 2px solid #2f56d3;
+  outline-offset: -2px;
+}
+
+.card:focus-visible {
+  outline: 2px solid #2f56d3;
+}
+
+
 /* RIGHT */
 .right{ width:72%; background:white; }
 
@@ -104,12 +114,38 @@ pre{
 <!-- LEFT -->
 <div class="left">
 
-  <div class="search">
-    <input id="searchBox" placeholder="Search issues...">
-  </div>
+  <div class="search" style="position:relative;">
+
+  <input
+    id="searchBox"
+    placeholder="Search issues..."
+  >
+
+  <button
+    id="clearSearch"
+    style="
+      position:absolute;
+      right:18px;
+      top:50%;
+      transform:translateY(-50%);
+      border:none;
+      background:none;
+      font-size:18px;
+      cursor:pointer;
+      display:none;
+      color:#666;
+    ">
+    ✕
+  </button>
+
+</div>
 
   <div id="suggestions"></div>
-  <div id="resultList"></div>
+  <div
+  id="resultList"
+  role="listbox"
+  aria-label="Accessibility Issues">
+</div>
 
 </div>
 
@@ -134,11 +170,13 @@ let issues = temp.map(item => {
   }
 });
 
-console.log("FINAL ISSUES:", issues);
 
 /* STATE */
 let current = {};
 let currentIndex = 0;
+
+/* Search Suggestions */
+let selectedSuggestionIndex = -1;
 
 /* INIT */
 if(issues.length){
@@ -159,18 +197,83 @@ function renderList(list){
   list.forEach((i,index)=>{
 
     let d = document.createElement("div");
-    d.className = "card";
-    d.innerText = i.issue;
+
+d.className = "card";
+
+d.innerHTML = `
+    <div>${i.issue}</div>
+
+    <div style="margin-top:6px;">
+
+        <span style="
+            background:#e8f0fe;
+            color:#1a56db;
+            padding:2px 8px;
+            border-radius:12px;
+            font-size:11px;
+            margin-right:4px;
+        ">
+            ${i.type || ""}
+        </span>
+
+        <span style="
+            background:#fde8e8;
+            color:#c81e1e;
+            padding:2px 8px;
+            border-radius:12px;
+            font-size:11px;
+            margin-right:4px;
+        ">
+            ${i.severity || ""}
+        </span>
+
+        <span style="
+            background:#f3e8ff;
+            color:#6b21a8;
+            padding:2px 8px;
+            border-radius:12px;
+            font-size:11px;
+            margin-right:4px;
+        ">
+            SC ${i.wcagSC || ""}
+        </span>
+
+        <span style="
+            background:#ecfdf3;
+            color:#047857;
+            padding:2px 8px;
+            border-radius:12px;
+            font-size:11px;
+        ">
+            Level ${i.wcagLevel || ""}
+        </span>
+
+    </div>
+`;
+d.setAttribute("role", "option");
+d.setAttribute("tabindex", index === currentIndex ? "0" : "-1");
+d.setAttribute(
+  "aria-selected",
+  index === currentIndex ? "true" : "false"
+);
+   
 
     if(index === currentIndex){
-      d.classList.add("active");
-    }
+    d.classList.add("active");
+}
 
     d.onclick = ()=>{
-      currentIndex = index;
-      renderList(list);
-      showDetails(i);
-    };
+  currentIndex = index;
+  renderList(list);
+  showDetails(i);
+
+  const activeCard =
+    document.querySelector(".card.active");
+
+  if(activeCard){
+    activeCard.focus();
+  }
+};
 
     resultList.appendChild(d);
   });
@@ -194,10 +297,37 @@ function showDetails(i){
       ${formatText(i.description)}
     </div>
   `;
-
   applyHighlight();
 }
+/* keyboard navigation */
+function moveSelection(list, newIndex){
 
+    if(!list.length) return;
+
+    if(newIndex < 0){
+        newIndex = 0;
+    }
+
+    if(newIndex >= list.length){
+        newIndex = list.length - 1;
+    }
+
+    currentIndex = newIndex;
+
+    renderList(list);
+    showDetails(list[currentIndex]);
+
+    setTimeout(() => {
+
+        const cards =
+            document.querySelectorAll(".card");
+
+        if(cards[currentIndex]){
+            cards[currentIndex].focus();
+        }
+
+    }, 0);
+}
 /* ✅ SWITCH TABS */
 function switchTab(e,type){
 
@@ -217,6 +347,26 @@ applyHighlight();
 }
 
 /* ✅ ✅ FINAL FORMATTER (FIXED) */
+const MAX_CODE_BLOCKS = 1;
+/*
+====================================
+SPRINT 2 ENHANCEMENT
+
+Support:
+
+Text
+
+Code Block A
+
+More Text
+
+Code Block B
+
+Current formatter supports:
+Text + Single Code Block
+
+====================================
+*/
 function formatText(text){
 
     if(!text) return "<p>-</p>";
@@ -242,13 +392,25 @@ ${escapeHTML(formatHTML(parts[1].trim()))}
     }
 
     let codeStart = findActualCodeStart(input);
-console.log("FORMAT INPUT:", input);
-console.log("CODE START:", codeStart);
+if(codeStart !== -1){
+
+    let codeSection =
+        input.substring(codeStart);
+
+    if(isInlineReference(codeSection)){
+        codeStart = -1;
+    }
+}
 
     if(codeStart === -1){
 
+    let formattedText =
+        escapeText(input)
+            .replace(/([:;.])\s*•/g, "$1<br>• ")
+            .replace(/\s*•\s*/g, "<br>• ");
+
     return `
-        <p>${escapeText(input)}</p>
+       <div>${formattedText}</div>
     `;
 }
 
@@ -272,85 +434,47 @@ ${escapeHTML(formatHTML(codeSnippet))}
 }
 function findActualCodeStart(text){
 
- const regexes = [
+    const htmlRegex =
+    /(&lt;|<)[a-z][a-z0-9-]*\s+[^>]*(class|id|name|type|href|src|role|aria-)[^>]*(&gt;|>)/ig;
 
-    /* Escaped HTML */
-    /&lt;div\s+[^&gt;]*&gt;/ig,
-    /&lt;fieldset\s+[^&gt;]*&gt;/ig,
-    /&lt;form\s+[^&gt;]*&gt;/ig,
-    /&lt;input\s+[^&gt;]*&gt;/ig,
-    /&lt;button\s+[^&gt;]*&gt;/ig,
-    /&lt;select\s+[^&gt;]*&gt;/ig,
-    /&lt;textarea\s+[^&gt;]*&gt;/ig,
-    /&lt;table\s+[^&gt;]*&gt;/ig,
-    /&lt;a\s+[^&gt;]*&gt;/ig,
-    /&lt;img\s+[^&gt;]*&gt;/ig,
-    /&lt;span\s+[^&gt;]*&gt;/ig,
-
-    /* Real HTML */
-    /<div\s+[^>]*>/ig,
-    /<fieldset\s+[^>]*>/ig,
-    /<form\s+[^>]*>/ig,
-    /<input\s+[^>]*>/ig,
-    /<button\s+[^>]*>/ig,
-    /<select\s+[^>]*>/ig,
-    /<textarea\s+[^>]*>/ig,
-    /<table\s+[^>]*>/ig,
-    /<a\s+[^>]*>/ig,
-    /<img\s+[^>]*>/ig,
-    /<span\s+[^>]*>/ig
-
-];
-
-
+    let match;
     let bestIndex = -1;
 
-    regexes.forEach(regex => {
-
-        regex.lastIndex = 0;
-
-        let match = regex.exec(text);
-
-        if(!match) return;
+    while((match = htmlRegex.exec(text)) !== null){
 
         let candidateIndex = match.index;
 
         let remainingText =
             text.substring(candidateIndex);
 
-        
+        let tagCount =
+            (
+                remainingText.match(
+                    /(&lt;\/?[a-z][^&gt;]*&gt;|<\/?[a-z][^>]*>)/ig
+                ) || []
+            ).length;
 
-let tagCount =
-    (
-        remainingText.match(
-            /(&lt;\/?[a-z][^&gt;]*&gt;|<\/?[a-z][^>]*>)/ig
-        ) || []
-    ).length;
+        if(tagCount >= 2){
 
-
-
-const hasRealCodeStructure =
-    tagCount >= 2 ||
-
-    /(&lt;|<)(input|button|select|textarea|a|img|span)\s+[^>]*(id|name|type|src|href|class|aria-)/i
-    .test(remainingText);
-
-
-
-
-if(hasRealCodeStructure){
-
-
-            if(bestIndex === -1 ||
-               candidateIndex < bestIndex){
-
-                bestIndex = candidateIndex;
-            }
+            bestIndex = candidateIndex;
+            break;
         }
-
-    });
+    }
 
     return bestIndex;
+}
+
+
+function isInlineReference(text){
+
+    let tagCount =
+        (
+            text.match(
+                /(&lt;\/?[a-z][^&gt;]*&gt;|<\/?[a-z][^>]*>)/ig
+            ) || []
+        ).length;
+
+    return tagCount <= 1;
 }
 
 function formatHTML(html){
@@ -374,12 +498,17 @@ function escapeText(text){
     return String(text)
         .replace(/&/g,"&amp;")
         .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;");
+        .replace(/>/g,"&gt;")
+        
 }
 /* ✅ SEARCH */
 searchBox.addEventListener("input", function(){
 
   let q = this.value.toLowerCase();
+  clearSearch.style.display =
+    this.value.trim()
+        ? "block"
+        : "none";
 
   if(!q){
     renderList(issues);
@@ -387,24 +516,220 @@ searchBox.addEventListener("input", function(){
     return;
   }
 
- let matches = issues.filter(i =>
- (
-   (i.issue || "") +
-   (i.description || "") +
-   (i.rationale || "") +
-   (i.suggestion || "")
- )
- .toLowerCase()
- .includes(q)
-);
+let matches = issues.filter(i => {
 
+    let level =
+        (i.wcagLevel || "").toLowerCase();
+
+    // Exact WCAG Level match
+    if(
+        q === "level a" ||
+        q === "level aa" ||
+        q === "best practice"
+    ){
+        return level === q.replace("level ","");
+    }
+
+    return (
+        (
+            (i.issue || "") +
+            (i.description || "") +
+            (i.rationale || "") +
+            (i.suggestion || "") +
+            (i.type || "") +
+            (i.severity || "") +
+            (i.wcagSC || "") +
+            ("level " + (i.wcagLevel || ""))
+        )
+        .toLowerCase()
+        .includes(q)
+    );
+
+});
+currentIndex = 0;
   renderList(matches);
   showSuggestions(matches);
 });
 
+searchBox.addEventListener("keydown", function(e){
+
+    if(e.key === "Escape"){
+
+        suggestions.style.display = "none";
+
+        searchBox.blur(); // optional
+    }
+
+});
+clearSearch.addEventListener("click", function(){
+
+    searchBox.value = "";
+
+    clearSearch.style.display = "none";
+
+    suggestions.style.display = "none";
+
+    currentIndex = 0;
+
+    renderList(issues);
+
+    if(issues.length){
+        showDetails(issues[0]);
+    }
+
+    searchBox.focus();
+});
+
+function auditRepository(){
+
+    let total = issues.length;
+    let codeDetected = 0;
+    let noCodeDetected = 0;
+
+    const report = [];
+
+    issues.forEach(item => {
+
+        const content =
+            item.suggestion ||
+            item.description ||
+            "";
+
+        const codeStart =
+            findActualCodeStart(content);
+
+        const detected =
+            codeStart !== -1;
+
+        if(detected){
+            codeDetected++;
+        }else{
+            noCodeDetected++;
+        }
+
+        report.push({
+            issue: item.issue,
+            detected,
+            codeStart
+        });
+
+    });
+
+    console.table(report);
+
+    console.log("Total Records:", total);
+    console.log("Code Detected:", codeDetected);
+    console.log("No Code:", noCodeDetected);
+
+    return report;
+}
+document.addEventListener("keydown", function(e){
+const suggestionsVisible =
+    suggestions.style.display === "block";
+
+if(suggestionsVisible){
+
+    const items =
+        document.querySelectorAll(
+            ".suggestion-item"
+        );
+
+    if(!items.length){
+        return;
+    }
+
+    if(e.key === "ArrowDown"){
+
+        e.preventDefault();
+
+        selectedSuggestionIndex++;
+
+        if(
+            selectedSuggestionIndex >= items.length
+        ){
+            selectedSuggestionIndex = 0;
+        }
+
+        items.forEach(i =>
+            i.style.background = ""
+        );
+
+        items[selectedSuggestionIndex]
+            .style.background =
+            "#dbeafe";
+	
+items[selectedSuggestionIndex]
+    .scrollIntoView({
+        block: "nearest"
+    });
+
+        return;
+    }
+
+    if(e.key === "ArrowUp"){
+
+        e.preventDefault();
+
+        selectedSuggestionIndex--;
+
+        if(selectedSuggestionIndex < 0){
+            selectedSuggestionIndex =
+                items.length - 1;
+        }
+
+        items.forEach(i =>
+            i.style.background = ""
+        );
+
+        items[selectedSuggestionIndex]
+            .style.background =
+            "#dbeafe";
+
+items[selectedSuggestionIndex]
+    .scrollIntoView({
+        block: "nearest"
+    });
+
+         items[selected]
+        return;
+    }
+
+    if(
+        e.key === "Enter" &&
+        selectedSuggestionIndex >= 0
+    ){
+
+        e.preventDefault();
+
+        items[selectedSuggestionIndex]
+            .click();
+
+        return;
+    }
+}
+
+    if(suggestions.style.display !== "block" &&
+    e.key === "ArrowDown"){
+        e.preventDefault();
+        moveSelection(
+            issues,
+            currentIndex + 1
+        );
+    }
+
+    if(
+uggestions.style.display !== "block" &&
+    e.key === "ArrowUp"){
+        e.preventDefault();
+        moveSelection(
+            issues,
+            currentIndex - 1
+        );
+    }
+});
 /* ✅ SUGGESTIONS */
 function showSuggestions(list){
-
+selectedSuggestionIndex = -1;
   if(!list.length){
     suggestions.style.display="none";
     return;
@@ -442,7 +767,10 @@ function applyHighlight(){
     hljs.highlightElement(b);
   });
 }
+document.addEventListener("keydown", function(e){
 
+  
+});
 </script>
 
 </body>
