@@ -97,6 +97,21 @@ body{
   padding:18px;
   line-height:1.6;
 }
+.section-title{
+    font-size:18px;
+    font-weight:600;
+    color:#1f2937;
+    margin-bottom:12px;
+    padding-bottom:8px;
+    border-bottom:1px solid #e5e7eb;
+}
+
+.section-card{
+    background:#f8fafc;
+    border:1px solid #e5e7eb;
+    border-radius:10px;
+    padding:16px;
+}
 
 pre{
   background:#f8f9fa;
@@ -294,8 +309,18 @@ function showDetails(i){
     </div>
 
     <div class="content" id="contentArea">
-      ${formatText(i.description)}
+
+    <div class="section-card">
+
+        <div class="section-title">
+            📖 Description
+        </div>
+
+        ${formatText(i.description)}
+
     </div>
+
+</div>
   `;
   applyHighlight();
 }
@@ -334,14 +359,36 @@ function switchTab(e,type){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   e.target.classList.add("active");
 
-  let content = "";
+let content = "";
+let title = "";
 
-  if(type==="desc") content = formatText(current.description);
-  if(type==="impact") content = formatText(current.rationale);
-  if(type==="rec") content = formatText(current.suggestion);
+if(type==="desc"){
+    title = "📖 Description";
+    content = formatText(current.description);
+}
+
+if(type==="impact"){
+    title = "👥 User Impact";
+    content = formatText(current.rationale);
+}
+
+if(type==="rec"){
+    title = "🛠 Recommendation";
+    content = formatText(current.suggestion);
+}
 
   
-document.getElementById("contentArea").innerHTML = content;
+document.getElementById("contentArea").innerHTML = `
+    <div class="section-card">
+
+        <div class="section-title">
+            ${title}
+        </div>
+
+        ${content}
+
+    </div>
+`;
 applyHighlight();
 
 }
